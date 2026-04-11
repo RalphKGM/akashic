@@ -9,6 +9,8 @@ import {
 } from '../services/photo.service.js';
 import { getClientAuthToken, getUserFromToken } from '../utils/getClientAuthToken.js';
 import { ensureNonEmptyString, ensureUuid } from '../utils/validation.js';
+import { createHttpError, sendErrorResponse } from '../utils/http.js';
+import { PHOTO_UPLOAD_MAX_BATCH_COUNT } from '../config/app.config.js';
 
 export const getAllPhotosController = async (req, res) => {
     try {
@@ -26,10 +28,7 @@ export const getAllPhotosController = async (req, res) => {
         });
     } catch (error) {
         console.error('getAllPhotos error:', error);
-        res.status(500).json({
-            error: 'Failed to fetch photos',
-            details: error.message,
-        });
+        sendErrorResponse(res, error, 'Failed to fetch photos');
     }
 };
 
@@ -50,10 +49,7 @@ export const getPhotoController = async (req, res) => {
         res.status(200).json(data);
 
     } catch (error) {
-        res.status(500).json({
-            error: 'Failed to fetch photo',
-            details: error.message
-        });
+        sendErrorResponse(res, error, 'Failed to fetch photo');
     }
 };
 
@@ -77,10 +73,7 @@ export const deletePhotoController = async (req, res) => {
 
     } catch (error) {
         console.error('Delete photo error:', error);
-        res.status(500).json({
-            error: 'Failed to delete photo',
-            details: error.message
-        });
+        sendErrorResponse(res, error, 'Failed to delete photo');
     }
 };
 
@@ -92,21 +85,25 @@ export const processPhotoController = async (req, res) => {
 
         const user = await getUserFromToken(token);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
-        if (!req.file) return res.status(400).json({ error: 'No image file provided' });
+        if (!req.file) {
+            throw createHttpError(400, 'No image file provided', 'PHOTO_REQUIRED');
+        }
 
-        console.log('device_asset_id received:', req.body.device_asset_id);
-
-        const device_asset_id = req.body.device_asset_id || null;
+        const device_asset_id = String(req.body?.device_asset_id || '').trim() || null;
 
         const result = await processPhoto(user, supabase, req.file.buffer, device_asset_id);
 
         res.status(200).json({ message: 'Image processed successfully', photo: result });
     } catch (error) {
         if (error.message === 'DUPLICATE_IMAGE') {
-            return res.status(409).json({ error: 'Duplicate image' });
+            return sendErrorResponse(
+                res,
+                createHttpError(409, 'Duplicate image', 'DUPLICATE_IMAGE'),
+                'Duplicate image'
+            );
         }
         console.error('error:', error);
-        res.status(500).json({ error: 'Failed to process image' });
+        sendErrorResponse(res, error, 'Failed to process image');
     }
 };
 
@@ -119,10 +116,17 @@ export const batchProcessPhotosController = async (req, res) => {
         const user = await getUserFromToken(token);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        if (!req.files || req.files.length === 0)
-            return res.status(400).json({ error: 'No image files provided' });
+        if (!req.files || req.files.length === 0) {
+            throw createHttpError(400, 'No image files provided', 'PHOTO_REQUIRED');
+        }
 
-        console.log('device_asset_ids received:', req.body.device_asset_id);
+        if (req.files.length > PHOTO_UPLOAD_MAX_BATCH_COUNT) {
+            throw createHttpError(
+                400,
+                `Batch uploads are limited to ${PHOTO_UPLOAD_MAX_BATCH_COUNT} images`,
+                'BATCH_LIMIT_EXCEEDED'
+            );
+        }
 
         const deviceAssetIds = Array.isArray(req.body.device_asset_id)
             ? req.body.device_asset_id
@@ -140,10 +144,7 @@ export const batchProcessPhotosController = async (req, res) => {
         });
     } catch (error) {
         console.error('Batch processing error:', error);
-        res.status(500).json({
-            error: 'Batch processing failed',
-            details: error.message
-        });
+        sendErrorResponse(res, error, 'Batch processing failed');
     }
 };
 
@@ -163,10 +164,7 @@ export const searchPhotosController = async (req, res) => {
         res.status(200).json({ results, count });
     } catch (error) {
         console.error('Search error:', error);
-        res.status(500).json({
-            error: 'Search failed',
-            details: error.message
-        });
+        sendErrorResponse(res, error, 'Search failed');
     }
 };
 
@@ -196,6 +194,6 @@ export const updatePhotoDescriptionsController = async (req, res) => {
         });
     } catch (err) {
         console.error('Update photo descriptions error:', err);
-        res.status(err.status ?? 500).json({ error: err.message });
+        sendErrorResponse(res, err, 'Failed to update photo descriptions');
     }
 };

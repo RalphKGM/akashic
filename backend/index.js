@@ -5,6 +5,7 @@ import photo from './routes/photo.js';
 import search from './routes/search.js';
 import faces from './routes/faces.js';
 import album from './routes/album.js';
+import { sendErrorResponse } from './utils/http.js';
 
 dotenv.config();
 
@@ -44,9 +45,20 @@ app.use((err, req, res, next) => {
   }
 
   console.error('Unhandled request error:', err.message);
-  res.status(400).json({
-    error: err.message || 'Invalid request',
-  });
+  sendErrorResponse(
+    res,
+    {
+      status: err.status ?? 400,
+      message: err.message || 'Invalid request',
+      code: err.code || 'REQUEST_ERROR',
+      details: err.details ?? null,
+    },
+    'Invalid request'
+  );
+});
+
+app.use((req, res) => {
+  sendErrorResponse(res, { status: 404, message: 'Route not found', code: 'ROUTE_NOT_FOUND' });
 });
 
 app.listen(PORT, () => {

@@ -1,6 +1,7 @@
 import { registerFace, detectFacesInImage } from '../services/face.service.js';
 import { getClientAuthToken, getUserFromToken } from '../utils/getClientAuthToken.js';
 import { ensureNonEmptyString, ensureUuid } from '../utils/validation.js';
+import { createHttpError, sendErrorResponse } from '../utils/http.js';
 
 // POST /api/faces/register
 export const registerFaceController = async (req, res) => {
@@ -11,7 +12,7 @@ export const registerFaceController = async (req, res) => {
 
         const user = await getUserFromToken(token);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
-        if (!req.file) return res.status(400).json({ error: 'No image provided' });
+        if (!req.file) throw createHttpError(400, 'No image provided', 'PHOTO_REQUIRED');
 
         const name = ensureNonEmptyString(req.body?.name, 'Name');
 
@@ -31,7 +32,7 @@ export const registerFaceController = async (req, res) => {
         res.status(201).json({ face: data });
     } catch (err) {
         console.error('registerFace error:', err.message);
-        res.status(500).json({ error: err.message });
+        sendErrorResponse(res, err, 'Failed to register face');
     }
 };
 
@@ -54,7 +55,7 @@ export const getKnownFacesController = async (req, res) => {
         if (error) throw error;
         res.json({ faces: data });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        sendErrorResponse(res, err, 'Failed to fetch faces');
     }
 };
 
@@ -78,6 +79,6 @@ export const deleteFaceController = async (req, res) => {
         if (error) throw error;
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        sendErrorResponse(res, err, 'Failed to delete face');
     }
 };

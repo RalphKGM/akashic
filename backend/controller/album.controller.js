@@ -8,6 +8,7 @@ import {
   deleteAlbum,
 } from '../services/album.service.js';
 import { ensureNonEmptyString, ensureUuid } from '../utils/validation.js';
+import { sendErrorResponse } from '../utils/http.js';
 
 export const getAlbumsController = async (req, res) => {
   try {
@@ -21,10 +22,7 @@ export const getAlbumsController = async (req, res) => {
     const albums = await getAlbums(user, supabase);
     res.status(200).json({ albums });
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to fetch albums',
-      details: error.message,
-    });
+    sendErrorResponse(res, error, 'Failed to fetch albums');
   }
 };
 
@@ -45,13 +43,10 @@ export const createAlbumController = async (req, res) => {
     res.status(201).json({ album });
   } catch (error) {
     if (error?.code === '23505') {
-      return res.status(409).json({ error: 'Album name already exists' });
+      return sendErrorResponse(res, { status: 409, message: 'Album name already exists', code: 'ALBUM_NAME_CONFLICT' });
     }
 
-    res.status(500).json({
-      error: 'Failed to create album',
-      details: error.message,
-    });
+    sendErrorResponse(res, error, 'Failed to create album');
   }
 };
 
@@ -72,20 +67,17 @@ export const addPhotosToAlbumController = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     if (error.message === 'Album not found') {
-      return res.status(404).json({ error: error.message });
+      return sendErrorResponse(res, { status: 404, message: error.message, code: 'ALBUM_NOT_FOUND' });
     }
 
     if (
       error.message === 'photoIds is required' ||
       error.message === 'No valid photos to add'
     ) {
-      return res.status(400).json({ error: error.message });
+      return sendErrorResponse(res, { status: 400, message: error.message, code: 'INVALID_PHOTO_SELECTION' });
     }
 
-    res.status(500).json({
-      error: 'Failed to add photos to album',
-      details: error.message,
-    });
+    sendErrorResponse(res, error, 'Failed to add photos to album');
   }
 };
 
@@ -106,17 +98,14 @@ export const removePhotosFromAlbumController = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     if (error.message === 'Album not found') {
-      return res.status(404).json({ error: error.message });
+      return sendErrorResponse(res, { status: 404, message: error.message, code: 'ALBUM_NOT_FOUND' });
     }
 
     if (error.message === 'photoIds is required') {
-      return res.status(400).json({ error: error.message });
+      return sendErrorResponse(res, { status: 400, message: error.message, code: 'INVALID_PHOTO_SELECTION' });
     }
 
-    res.status(500).json({
-      error: 'Failed to remove photos from album',
-      details: error.message,
-    });
+    sendErrorResponse(res, error, 'Failed to remove photos from album');
   }
 };
 
@@ -137,21 +126,18 @@ export const renameAlbumController = async (req, res) => {
     res.status(200).json({ album });
   } catch (error) {
     if (error?.code === '23505') {
-      return res.status(409).json({ error: 'Album name already exists' });
+      return sendErrorResponse(res, { status: 409, message: 'Album name already exists', code: 'ALBUM_NAME_CONFLICT' });
     }
 
     if (error.message === 'Album not found') {
-      return res.status(404).json({ error: error.message });
+      return sendErrorResponse(res, { status: 404, message: error.message, code: 'ALBUM_NOT_FOUND' });
     }
 
     if (error.message === 'Album name is required') {
-      return res.status(400).json({ error: error.message });
+      return sendErrorResponse(res, { status: 400, message: error.message, code: 'ALBUM_NAME_REQUIRED' });
     }
 
-    res.status(500).json({
-      error: 'Failed to rename album',
-      details: error.message,
-    });
+    sendErrorResponse(res, error, 'Failed to rename album');
   }
 };
 
@@ -170,16 +156,13 @@ export const deleteAlbumController = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     if (error.message === 'Album not found') {
-      return res.status(404).json({ error: error.message });
+      return sendErrorResponse(res, { status: 404, message: error.message, code: 'ALBUM_NOT_FOUND' });
     }
 
     if (error.message === 'Album ID is required') {
-      return res.status(400).json({ error: error.message });
+      return sendErrorResponse(res, { status: 400, message: error.message, code: 'ALBUM_ID_REQUIRED' });
     }
 
-    res.status(500).json({
-      error: 'Failed to delete album',
-      details: error.message,
-    });
+    sendErrorResponse(res, error, 'Failed to delete album');
   }
 };

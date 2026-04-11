@@ -27,8 +27,8 @@
 - [x] Validate album/photo/face IDs at controller and service boundaries
 - [x] Add no-dependency backend tests
 - [x] Add CI for backend syntax and tests
-- [ ] Add consistent error formatting across all controllers
-- [ ] Add rate limiting for upload and search routes
+- [x] Add consistent error formatting across all controllers
+- [x] Add rate limiting for upload and search routes
 - [ ] Reduce multipart memory risk or move to direct-to-storage uploads
 
 ## P1: Frontend Code Quality

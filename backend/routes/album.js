@@ -7,14 +7,15 @@ import {
   removePhotosFromAlbumController,
   renameAlbumController,
 } from '../controller/album.controller.js';
+import { mutationRateLimit } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
 router.get('/albums', getAlbumsController);
-router.post('/albums', createAlbumController);
-router.post('/albums/:id/photos', addPhotosToAlbumController);
-router.delete('/albums/:id/photos', removePhotosFromAlbumController);
-router.patch('/albums/:id', renameAlbumController);
-router.delete('/albums/:id', deleteAlbumController);
+router.post('/albums', mutationRateLimit, createAlbumController);
+router.post('/albums/:id/photos', mutationRateLimit, addPhotosToAlbumController);
+router.delete('/albums/:id/photos', mutationRateLimit, removePhotosFromAlbumController);
+router.patch('/albums/:id', mutationRateLimit, renameAlbumController);
+router.delete('/albums/:id', mutationRateLimit, deleteAlbumController);
 
 export default router;

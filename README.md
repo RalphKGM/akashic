@@ -43,6 +43,12 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 GITHUB_MODELS_TOKEN=your_github_pat_with_models_read
 GITHUB_MODELS_CHAT_MODEL=openai/gpt-4.1-mini
 GITHUB_MODELS_EMBEDDING_MODEL=openai/text-embedding-3-small
+PHOTO_UPLOAD_MAX_FILE_SIZE=10485760
+PHOTO_UPLOAD_MAX_BATCH_COUNT=20
+PHOTO_BATCH_PROCESS_CONCURRENCY=3
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_SEARCH=30
+RATE_LIMIT_MAX_MUTATIONS=60
 PORT=3000
 ```
 
@@ -102,6 +108,13 @@ Available endpoints:
 - `DELETE /api/faces/:id`
 
 All `/api/*` endpoints require `Authorization: Bearer <token>`.
+
+The backend also now applies basic in-memory rate limiting to:
+
+- search requests
+- photo uploads
+- album mutations
+- face mutations
 
 ## Local Mobile Development With EAS Dev Builds
 

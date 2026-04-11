@@ -9,6 +9,9 @@ const resolveDeviceAssetId = (photo) => {
     return null;
 };
 
+const normalizeApiError = (data, fallbackMessage) =>
+  data?.error || data?.message || fallbackMessage;
+
 export const takePhoto = async () => {
     const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
     const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync();
@@ -58,6 +61,9 @@ export const takePhoto = async () => {
         id: data.photo?.id || null,
         category: data.photo?.category,
         tags: data.photo?.tags,
+        is_favorite: data.photo?.is_favorite ?? false,
+        is_archived: data.photo?.is_archived ?? false,
+        is_hidden: data.photo?.is_hidden ?? false,
         created_at: data.photo?.created_at || null,
       };
     } catch (error) {
@@ -86,7 +92,7 @@ export const processSinglePhoto = async (photo) => {
         return { duplicate: true };
     }
     if (!response.ok) {
-        throw new Error(data.error || 'Failed to process photo');
+        throw new Error(normalizeApiError(data, 'Failed to process photo'));
     }
     return data;
 };
@@ -140,7 +146,7 @@ export const processPhotos = async (photos) => {
     }
 
     if (!response.ok) {
-        throw new Error(data.error || 'Failed to process photos');
+        throw new Error(normalizeApiError(data, 'Failed to process photos'));
     }
 
     return data;
@@ -188,7 +194,7 @@ export const getAllPhotos = async () => {
         if (response.ok) {
             return data.result || [];
         } else {
-            throw new Error(data.error || 'Failed to load photos');
+            throw new Error(normalizeApiError(data, 'Failed to load photos'));
         }
     } catch (error) {
         console.log("getAllPhotos Service Error:", error);
@@ -214,7 +220,7 @@ export const searchPhoto = async (query = '') => {
         if (response.ok) {
             return data.results || [];
         } else {
-            throw new Error(data.error || 'Failed to search photos');
+            throw new Error(normalizeApiError(data, 'Failed to search photos'));
         }
     } catch (error) {
         console.log("searchPhoto Service Error:", error);
@@ -236,7 +242,7 @@ export const deletePhoto = async (photoId) => {
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || 'Failed to delete photo');
+    throw new Error(normalizeApiError(data, 'Failed to delete photo'));
   }
 
   return data;
@@ -258,7 +264,38 @@ export const updatePhotoDescriptions = async ({ photoId, literal, descriptive })
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || 'Failed to update descriptions');
+    throw new Error(normalizeApiError(data, 'Failed to update descriptions'));
+  }
+
+  return data.photo;
+};
+
+export const updatePhotoPreferences = async ({
+  photoId,
+  isFavorite,
+  isArchived,
+  isHidden,
+}) => {
+  if (!photoId)
+    throw new Error('Photo ID is required');
+
+  const token = await getSession();
+  const response = await fetch(`${API_URL}/api/photo/${photoId}/preferences`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      is_favorite: isFavorite,
+      is_archived: isArchived,
+      is_hidden: isHidden,
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(normalizeApiError(data, 'Failed to update photo preferences'));
   }
 
   return data.photo;

@@ -10,6 +10,7 @@ import {
     getPhotoController,
     processPhotoController,
     updatePhotoDescriptionsController,
+    updatePhotoPreferencesController,
     getAllPhotosController
 } from '../controller/photo.controller.js';
 import { mutationRateLimit } from '../middleware/rateLimit.js';
@@ -36,5 +37,6 @@ router.delete('/photo/:id', mutationRateLimit, deletePhotoController);
 router.get('/photo/:id', getPhotoController);
 router.get('/photos', getAllPhotosController);
 router.patch('/photo/:id/descriptions', mutationRateLimit, updatePhotoDescriptionsController);
+router.patch('/photo/:id/preferences', mutationRateLimit, updatePhotoPreferencesController);
 
 export default router;

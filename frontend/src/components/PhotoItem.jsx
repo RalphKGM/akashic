@@ -71,6 +71,26 @@ function PhotoItem({
             </View>
           </View>
         )}
+
+        {!selectionMode && (item?.is_favorite || item?.is_archived || item?.is_hidden) && (
+          <View className="absolute top-1.5 left-1.5 flex-row gap-1">
+            {item?.is_favorite && (
+              <View className="bg-black/55 rounded-full p-1">
+                <Ionicons name="heart" size={11} color="#F87171" />
+              </View>
+            )}
+            {item?.is_archived && (
+              <View className="bg-black/55 rounded-full p-1">
+                <Ionicons name="archive" size={11} color="white" />
+              </View>
+            )}
+            {item?.is_hidden && (
+              <View className="bg-black/55 rounded-full p-1">
+                <Ionicons name="eye-off" size={11} color="white" />
+              </View>
+            )}
+          </View>
+        )}
       </View>
     </Pressable>
   );

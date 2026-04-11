@@ -50,7 +50,7 @@
 - [ ] People search like `photos with Ralph`
 - [ ] Timeline browsing by date
 - [ ] Location-based browsing and filters
-- [ ] Favorites, archive, and hide actions
+- [x] Favorites, archive, and hide actions
 - [ ] Cross-device access with stable cloud-backed photo storage
 - [ ] Better privacy controls and user-facing deletion guarantees
 

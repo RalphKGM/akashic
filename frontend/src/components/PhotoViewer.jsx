@@ -40,6 +40,7 @@ export default function PhotoViewer({
   onClose,
   onDelete,
   onSaveDescriptions,
+  onUpdatePreferences,
   isDeleting = false
 }) {
   const { isDarkMode } = useThemeContext();
@@ -57,6 +58,7 @@ export default function PhotoViewer({
   const [descriptiveDraft, setDescriptiveDraft] = useState('');
   const [isSavingDescriptions, setIsSavingDescriptions] = useState(false);
   const [isEditingDescriptions, setIsEditingDescriptions] = useState(false);
+  const [updatingPreferenceKey, setUpdatingPreferenceKey] = useState(null);
 
   const currentPhoto = photos?.[currentIndex];
   const photoData = currentPhoto?.item ?? currentPhoto;
@@ -65,6 +67,9 @@ export default function PhotoViewer({
     : [];
   const currentLiteral = photoData?.literal ?? '';
   const currentDescriptive = photoData?.descriptive ?? '';
+  const isFavorite = Boolean(photoData?.is_favorite);
+  const isArchived = Boolean(photoData?.is_archived);
+  const isHidden = Boolean(photoData?.is_hidden);
   const hasDescriptionChange =
     literalDraft.trim() !== currentLiteral.trim() ||
     descriptiveDraft.trim() !== currentDescriptive.trim();
@@ -205,6 +210,24 @@ export default function PhotoViewer({
     }
   };
 
+  const handlePreferenceUpdate = async (patch, key) => {
+    if (!photoData?.id || !onUpdatePreferences || updatingPreferenceKey) return;
+
+    try {
+      setUpdatingPreferenceKey(key);
+      await onUpdatePreferences({
+        photoId: photoData.id,
+        isFavorite: patch.is_favorite ?? photoData.is_favorite,
+        isArchived: patch.is_archived ?? photoData.is_archived,
+        isHidden: patch.is_hidden ?? photoData.is_hidden,
+      });
+    } catch (error) {
+      Alert.alert('Update failed', error.message || 'Failed to update photo');
+    } finally {
+      setUpdatingPreferenceKey(null);
+    }
+  };
+
   if (!visible || !photos?.length) return null;
 
   return (
@@ -252,6 +275,20 @@ export default function PhotoViewer({
         )}
 
         <View className="absolute bottom-12 right-6 z-50 flex-row items-center gap-4">
+          {onUpdatePreferences && (
+            <Pressable
+              onPress={() => handlePreferenceUpdate({ is_favorite: !isFavorite }, 'favorite')}
+              disabled={Boolean(updatingPreferenceKey)}
+              className="p-2"
+              style={{ opacity: updatingPreferenceKey ? 0.4 : 1 }}
+            >
+              <Ionicons
+                name={isFavorite ? 'heart' : 'heart-outline'}
+                size={28}
+                color={isFavorite ? '#F87171' : 'white'}
+              />
+            </Pressable>
+          )}
           <Pressable onPress={openSheet} className="p-2">
             <Ionicons name="information-circle-outline" size={28} color="white" />
           </Pressable>
@@ -369,6 +406,44 @@ export default function PhotoViewer({
                       </View>
                     )}
                   </>
+                )}
+
+                {onUpdatePreferences && (
+                  <View className="mb-5">
+                    <Text className={`text-xs font-semibold uppercase tracking-wider mb-2 ${colors.title}`}>Actions</Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      <Pressable
+                        onPress={() => handlePreferenceUpdate({ is_favorite: !isFavorite }, 'favorite')}
+                        disabled={Boolean(updatingPreferenceKey)}
+                        className={`px-3 py-2 rounded-full ${colors.tagBg}`}
+                        style={{ opacity: updatingPreferenceKey ? 0.5 : 1 }}
+                      >
+                        <Text className={`${colors.tagText} text-sm`}>
+                          {isFavorite ? 'Remove favorite' : 'Add favorite'}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handlePreferenceUpdate({ is_archived: !isArchived }, 'archived')}
+                        disabled={Boolean(updatingPreferenceKey)}
+                        className={`px-3 py-2 rounded-full ${colors.tagBg}`}
+                        style={{ opacity: updatingPreferenceKey ? 0.5 : 1 }}
+                      >
+                        <Text className={`${colors.tagText} text-sm`}>
+                          {isArchived ? 'Unarchive' : 'Archive'}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handlePreferenceUpdate({ is_hidden: !isHidden }, 'hidden')}
+                        disabled={Boolean(updatingPreferenceKey)}
+                        className={`px-3 py-2 rounded-full ${colors.tagBg}`}
+                        style={{ opacity: updatingPreferenceKey ? 0.5 : 1 }}
+                      >
+                        <Text className={`${colors.tagText} text-sm`}>
+                          {isHidden ? 'Unhide' : 'Hide'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
                 )}
 
                 {tags.length > 0 && (

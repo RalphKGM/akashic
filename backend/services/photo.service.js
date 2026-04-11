@@ -57,7 +57,7 @@ Numbers only, no explanation.`
 export const getAllPhotos = async (user, supabase) => {
     const { data, error } = await supabase
         .from('photo')
-        .select('id, device_asset_id, descriptive, literal, tags, category, created_at')
+        .select('id, device_asset_id, descriptive, literal, tags, category, is_favorite, is_archived, is_hidden, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -68,7 +68,7 @@ export const getAllPhotos = async (user, supabase) => {
 export const getPhoto = async (user, supabase, id) => {
     const { data, error } = await supabase
         .from('photo')
-        .select('id, device_asset_id, descriptive, literal, tags, category, created_at')
+        .select('id, device_asset_id, descriptive, literal, tags, category, is_favorite, is_archived, is_hidden, created_at')
         .eq('id', id)
         .eq('user_id', user.id)
         .single();
@@ -146,6 +146,9 @@ export const processPhoto = async (user, supabase, image, device_asset_id) => {
             tags,
             category,
             faces,
+            is_favorite: false,
+            is_archived: false,
+            is_hidden: false,
             descriptive_embedding: descriptiveEmbedding,
             literal_embedding: literalEmbedding,
         })
@@ -265,10 +268,49 @@ export const updatePhotoDescriptions = async ({
         })
         .eq('id', photoId)
         .eq('user_id', userId)
-        .select('id, device_asset_id, descriptive, literal, tags, category, created_at, updated_at')
+        .select('id, device_asset_id, descriptive, literal, tags, category, is_favorite, is_archived, is_hidden, created_at, updated_at')
         .single();
 
     if (updateError) throw updateError;
+
+    return updated;
+};
+
+export const updatePhotoPreferences = async ({
+    supabase,
+    userId,
+    photoId,
+    isFavorite,
+    isArchived,
+    isHidden,
+}) => {
+    const updates = {};
+
+    if (typeof isFavorite === 'boolean') updates.is_favorite = isFavorite;
+    if (typeof isArchived === 'boolean') updates.is_archived = isArchived;
+    if (typeof isHidden === 'boolean') updates.is_hidden = isHidden;
+
+    if (Object.keys(updates).length === 0) {
+        const err = new Error('At least one photo preference is required');
+        err.status = 400;
+        throw err;
+    }
+
+    updates.updated_at = new Date().toISOString();
+
+    const { data: updated, error } = await supabase
+        .from('photo')
+        .update(updates)
+        .eq('id', photoId)
+        .eq('user_id', userId)
+        .select('id, device_asset_id, descriptive, literal, tags, category, is_favorite, is_archived, is_hidden, created_at, updated_at')
+        .single();
+
+    if (error || !updated) {
+        const err = new Error('Photo not found');
+        err.status = 404;
+        throw err;
+    }
 
     return updated;
 };

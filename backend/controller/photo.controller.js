@@ -6,6 +6,7 @@ import {
     processPhoto,
     searchPhotos,
     updatePhotoDescriptions,
+    updatePhotoPreferences,
 } from '../services/photo.service.js';
 import { getClientAuthToken, getUserFromToken } from '../utils/getClientAuthToken.js';
 import { ensureNonEmptyString, ensureUuid } from '../utils/validation.js';
@@ -195,5 +196,35 @@ export const updatePhotoDescriptionsController = async (req, res) => {
     } catch (err) {
         console.error('Update photo descriptions error:', err);
         sendErrorResponse(res, err, 'Failed to update photo descriptions');
+    }
+};
+
+export const updatePhotoPreferencesController = async (req, res) => {
+    try {
+        const auth = getClientAuthToken(req, res);
+        if (!auth) return;
+        const { supabase, token } = auth;
+
+        const user = await getUserFromToken(token);
+        if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+        ensureUuid(req.params.id, 'Photo ID');
+
+        const photo = await updatePhotoPreferences({
+            supabase,
+            userId: user.id,
+            photoId: req.params.id,
+            isFavorite: req.body?.is_favorite,
+            isArchived: req.body?.is_archived,
+            isHidden: req.body?.is_hidden,
+        });
+
+        res.json({
+            message: 'Photo preferences updated successfully',
+            photo,
+        });
+    } catch (error) {
+        console.error('Update photo preferences error:', error);
+        sendErrorResponse(res, error, 'Failed to update photo preferences');
     }
 };

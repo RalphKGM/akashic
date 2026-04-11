@@ -88,6 +88,9 @@ export default function Upload() {
                   id: res.photo.id || null,
                   category: res.photo.category,
                   tags: res.photo.tags,
+                  is_favorite: res.photo.is_favorite ?? false,
+                  is_archived: res.photo.is_archived ?? false,
+                  is_hidden: res.photo.is_hidden ?? false,
                   created_at: res.photo.created_at || null,
                 });
               }

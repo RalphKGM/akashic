@@ -22,6 +22,10 @@ export default function Albums() {
   const { photos, setPhotos } = usePhotoContext();
   const { isDarkMode } = useThemeContext();
   const colors = getThemeColors(isDarkMode);
+  const activePhotos = useMemo(
+    () => photos.filter((photo) => !photo?.is_hidden && !photo?.is_archived),
+    [photos]
+  );
   const {
     screenWidth,
     slideAnim,
@@ -65,11 +69,11 @@ export default function Albums() {
     handleRemoveFromAlbum,
     handleRenameAlbum,
     handleDeleteAlbum,
-  } = useAlbums({ photos, setPhotos });
+  } = useAlbums({ photos: activePhotos, setPhotos });
 
   const categoryAlbums = useMemo(() => {
     const grouped = {};
-    for (const photo of photos) {
+    for (const photo of activePhotos) {
       const category = photo.category?.toLowerCase();
       if (!category || category === 'none') continue;
       if (!grouped[category]) grouped[category] = [];
@@ -83,7 +87,7 @@ export default function Albums() {
         photos: grouped[cat],
         isCategory: true,
       }));
-  }, [photos]);
+  }, [activePhotos]);
 
   const categoryAlbumRows = useMemo(() => {
     const rows = [];
@@ -162,7 +166,7 @@ export default function Albums() {
         totalPhotosInAlbums={totalPhotosInAlbums}
         isLoading={isLoading}
         onAddPress={openCreateAlbum}
-        disableAdd={photos.length === 0}
+        disableAdd={activePhotos.length === 0}
       />
 
       {isLoading ? (
@@ -253,7 +257,7 @@ export default function Albums() {
         albumName={newAlbumName}
         onChangeName={setNewAlbumName}
         selectedCount={selectedPhotoIds.length}
-        photos={photos}
+        photos={activePhotos}
         renderPhotoItem={renderCreatePhotoItem}
         numColumns={CREATE_COLUMNS}
       />

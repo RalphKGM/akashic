@@ -96,6 +96,7 @@ Available endpoints:
 - `GET /api/photo/:id`
 - `DELETE /api/photo/:id`
 - `PATCH /api/photo/:id/descriptions`
+- `PATCH /api/photo/:id/preferences`
 - `POST /api/photos/search`
 - `GET /api/albums`
 - `POST /api/albums`

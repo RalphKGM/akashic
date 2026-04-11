@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import {
   View,
   FlatList,
@@ -22,6 +22,25 @@ import { useLibrarySearch } from '../../hooks/useLibrarySearch.js';
 import { useLibraryPhotoActions } from '../../hooks/useLibraryPhotoActions.js';
 
 const numColumns = 4;
+const FILTERS = ['library', 'favorites', 'archived', 'hidden', 'all'];
+
+const matchesPhotoFilter = (photo, filter) => {
+  if (!photo) return false;
+
+  switch (filter) {
+    case 'favorites':
+      return Boolean(photo.is_favorite) && !photo.is_hidden;
+    case 'archived':
+      return Boolean(photo.is_archived) && !photo.is_hidden;
+    case 'hidden':
+      return Boolean(photo.is_hidden);
+    case 'all':
+      return true;
+    case 'library':
+    default:
+      return !photo.is_archived && !photo.is_hidden;
+  }
+};
 
 export default function Library() {
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions({
@@ -31,6 +50,7 @@ export default function Library() {
   const { isDarkMode } = useThemeContext();
   const router = useRouter();
   const flatListRef = useRef(null);
+  const [activeFilter, setActiveFilter] = useState('library');
 
   const {
     isSearching,
@@ -47,6 +67,16 @@ export default function Library() {
     searchOpacity,
   } = useLibrarySearch();
 
+  const displayPhotos = useMemo(
+    () => photos.filter((photo) => matchesPhotoFilter(photo, activeFilter)),
+    [photos, activeFilter]
+  );
+
+  const displayFilteredPhotos = useMemo(
+    () => (filteredPhotos || []).filter((photo) => matchesPhotoFilter(photo, activeFilter)),
+    [filteredPhotos, activeFilter]
+  );
+
   const {
     viewerPhotos,
     selectedIndex,
@@ -62,9 +92,12 @@ export default function Library() {
     handleDeleteSelectedPhoto,
     handleDeleteSelectedPhotos,
     handleSaveDescriptions,
+    handleUpdatePhotoPreferences,
   } = useLibraryPhotoActions({
     photos,
     filteredPhotos,
+    displayPhotos,
+    displayFilteredPhotos,
     setPhotos,
     setFilteredPhotos,
   });
@@ -88,14 +121,15 @@ export default function Library() {
   // scroll to bottom only when new photos are uploaded (not on initial load)
   const prevPhotoCountRef = useRef(0);
   useEffect(() => {
-    const isNewUpload = photos.length > prevPhotoCountRef.current && prevPhotoCountRef.current > 0;
-    prevPhotoCountRef.current = photos.length;
+    const isNewUpload =
+      displayPhotos.length > prevPhotoCountRef.current && prevPhotoCountRef.current > 0;
+    prevPhotoCountRef.current = displayPhotos.length;
     if (isNewUpload) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
-  }, [photos.length]);
+  }, [displayPhotos.length]);
 
   useEffect(() => {
     let mounted = true;
@@ -130,6 +164,17 @@ export default function Library() {
   const bannerSpinnerColor = isDarkMode ? '#A1A1AA' : '#52525B';
   const bannerTextColor = isDarkMode ? '#E4E4E7' : '#52525B';
   const bannerSubTextColor = isDarkMode ? '#71717A' : '#737373';
+
+  const handleUpdatePreferencesFromViewer = useCallback(
+    async (payload) => {
+      const updated = await handleUpdatePhotoPreferences(payload);
+      if (updated && !matchesPhotoFilter(updated, activeFilter)) {
+        setSelectedIndex(null);
+      }
+      return updated;
+    },
+    [activeFilter, handleUpdatePhotoPreferences, setSelectedIndex]
+  );
 
   return (
     <View className={`flex-1 ${colors.pageBg}`}>
@@ -205,9 +250,33 @@ export default function Library() {
         )}
 
         {!isSearching && !isSelectionMode && (
-          <Text className={`text-xs mt-0.5 ${colors.count}`}>
-            {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
-          </Text>
+          <>
+            <Text className={`text-xs mt-0.5 ${colors.count}`}>
+              {displayPhotos.length} {displayPhotos.length === 1 ? 'photo' : 'photos'}
+            </Text>
+            <View className="flex-row flex-wrap gap-2 mt-3">
+              {FILTERS.map((filter) => {
+                const isActive = activeFilter === filter;
+                return (
+                  <Pressable
+                    key={filter}
+                    onPress={() => setActiveFilter(filter)}
+                    className={`px-3 py-1.5 rounded-full ${
+                      isActive ? 'bg-black' : isDarkMode ? 'bg-zinc-700' : 'bg-gray-100'
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-semibold ${
+                        isActive ? 'text-white' : colors.textSecondary
+                      }`}
+                    >
+                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
         )}
       </View>
 
@@ -262,7 +331,7 @@ export default function Library() {
         ) : (
           <FlatList
             ref={flatListRef}
-            data={photos}
+            data={displayPhotos}
             numColumns={numColumns}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ paddingHorizontal: 2.5, paddingTop: 2, paddingBottom: 200 }}
@@ -284,7 +353,7 @@ export default function Library() {
               </View>
             ) : filteredPhotos !== null ? (
               <FlatList
-                data={filteredPhotos}
+                data={displayFilteredPhotos}
                 numColumns={numColumns}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={{
@@ -307,6 +376,7 @@ export default function Library() {
         onClose={() => setSelectedIndex(null)}
         onDelete={handleDeleteSelectedPhoto}
         onSaveDescriptions={handleSaveDescriptions}
+        onUpdatePreferences={handleUpdatePreferencesFromViewer}
         isDeleting={isDeletingPhoto}
       />
     </View>

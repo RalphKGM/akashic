@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
-import { deletePhoto, updatePhotoDescriptions } from '../service/photoService.js';
+import { deletePhoto, updatePhotoDescriptions, updatePhotoPreferences } from '../service/photoService.js';
 import { addPhotoToCache, removePhotoFromCache } from '../service/cacheService.js';
 
 export const useLibraryPhotoActions = ({
   photos,
   filteredPhotos,
+  displayPhotos,
+  displayFilteredPhotos,
   setPhotos,
   setFilteredPhotos,
 }) => {
@@ -15,7 +17,7 @@ export const useLibraryPhotoActions = ({
   const [selectedPhotoIds, setSelectedPhotoIds] = useState([]);
   const [isDeletingSelectedPhotos, setIsDeletingSelectedPhotos] = useState(false);
 
-  const sourcePhotos = filteredPhotos ?? photos;
+  const sourcePhotos = displayFilteredPhotos ?? filteredPhotos ?? displayPhotos ?? photos;
   const selectedCount = selectedPhotoIds.length;
   const viewerPhotos = useMemo(
     () => sourcePhotos.map((photo) => ({ item: photo })),
@@ -165,6 +167,33 @@ export const useLibraryPhotoActions = ({
     [filteredPhotos, setFilteredPhotos, setPhotos]
   );
 
+  const handleUpdatePhotoPreferences = useCallback(
+    async ({ photoId, isFavorite, isArchived, isHidden }) => {
+      if (!photoId) throw new Error('Photo ID is required');
+
+      const updated = await updatePhotoPreferences({
+        photoId,
+        isFavorite,
+        isArchived,
+        isHidden,
+      });
+
+      setPhotos((prev) =>
+        prev.map((photo) => (photo.id === photoId ? { ...photo, ...updated } : photo))
+      );
+
+      if (filteredPhotos) {
+        setFilteredPhotos((prev) =>
+          prev.map((photo) => (photo.id === photoId ? { ...photo, ...updated } : photo))
+        );
+      }
+
+      await addPhotoToCache(updated);
+      return updated;
+    },
+    [filteredPhotos, setFilteredPhotos, setPhotos]
+  );
+
   return {
     sourcePhotos,
     viewerPhotos,
@@ -181,5 +210,6 @@ export const useLibraryPhotoActions = ({
     handleDeleteSelectedPhoto,
     handleDeleteSelectedPhotos,
     handleSaveDescriptions,
+    handleUpdatePhotoPreferences,
   };
 };

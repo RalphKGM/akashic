@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS public.photo (
     literal               text NOT NULL,
     category              text NULL,
     faces                 text NULL,
+    is_favorite           boolean NOT NULL DEFAULT false,
+    is_archived           boolean NOT NULL DEFAULT false,
+    is_hidden             boolean NOT NULL DEFAULT false,
     descriptive_embedding vector(1536) NULL,
     literal_embedding     vector(1536) NULL,
     tags                  text NULL,
@@ -78,6 +81,9 @@ RETURNS TABLE (
     literal TEXT,
     tags TEXT,
     category TEXT,
+    is_favorite BOOLEAN,
+    is_archived BOOLEAN,
+    is_hidden BOOLEAN,
     created_at TIMESTAMPTZ
 )
 LANGUAGE sql AS $$
@@ -115,6 +121,9 @@ SELECT
     p.literal,
     p.tags,
     p.category,
+    p.is_favorite,
+    p.is_archived,
+    p.is_hidden,
     p.created_at
 FROM full_text
 FULL OUTER JOIN semantic ON full_text.id = semantic.id

@@ -43,6 +43,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 GITHUB_MODELS_TOKEN=your_github_pat_with_models_read
 GITHUB_MODELS_CHAT_MODEL=openai/gpt-4.1-mini
 GITHUB_MODELS_EMBEDDING_MODEL=openai/text-embedding-3-small
+AI_REQUEST_TIMEOUT_MS=30000
+AI_REQUEST_MAX_RETRIES=2
+AI_RETRY_BASE_DELAY_MS=750
 PHOTO_UPLOAD_MAX_FILE_SIZE=10485760
 PHOTO_UPLOAD_MAX_BATCH_COUNT=20
 PHOTO_BATCH_PROCESS_CONCURRENCY=3
@@ -116,6 +119,8 @@ The backend also now applies basic in-memory rate limiting to:
 - photo uploads
 - album mutations
 - face mutations
+
+GitHub Models requests now use a configurable timeout and bounded retries so slow or rate-limited upstream calls fail faster instead of hanging uploads indefinitely.
 
 ## Local Mobile Development With EAS Dev Builds
 

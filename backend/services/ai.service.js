@@ -6,6 +6,16 @@ import {
   GITHUB_MODELS_EMBEDDING_MODEL,
   getGitHubModelsHeaders,
 } from '../config/ai.config.js';
+import {
+  AI_REQUEST_MAX_RETRIES,
+  AI_REQUEST_TIMEOUT_MS,
+  AI_RETRY_BASE_DELAY_MS,
+} from '../config/app.config.js';
+import {
+  getAiRetryDelayMs,
+  isRetryableAiError,
+  normalizeAiRequestError,
+} from '../utils/aiRequest.js';
 
 dotenv.config();
 
@@ -45,28 +55,66 @@ const parseResponse = async (response) => {
   }
 };
 
-const requestGitHubModels = async (path, body) => {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const buildGitHubModelsError = (payload, path, status) => {
+  const message =
+    payload?.error?.message ||
+    payload?.message ||
+    payload?.raw ||
+    `GitHub Models request failed with status ${status}`;
+
+  const err = new Error(message);
+  err.status = status;
+  err.code = 'GITHUB_MODELS_REQUEST_FAILED';
+  err.path = path;
+  return err;
+};
+
+const requestGitHubModels = async (
+  path,
+  body,
+  { retries = AI_REQUEST_MAX_RETRIES, timeoutMs = AI_REQUEST_TIMEOUT_MS } = {}
+) => {
   assertGitHubModelsConfig();
 
-  const response = await fetch(`${GITHUB_MODELS_API_URL}${path}`, {
-    method: 'POST',
-    headers: getGitHubModelsHeaders(),
-    body: JSON.stringify(body),
-  });
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const payload = await parseResponse(response);
-  if (!response.ok) {
-    const message =
-      payload?.error?.message ||
-      payload?.message ||
-      payload?.raw ||
-      `GitHub Models request failed with status ${response.status}`;
-    const err = new Error(message);
-    err.status = response.status;
-    throw err;
+    try {
+      const response = await fetch(`${GITHUB_MODELS_API_URL}${path}`, {
+        method: 'POST',
+        headers: getGitHubModelsHeaders(),
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      const payload = await parseResponse(response);
+      if (!response.ok) {
+        throw buildGitHubModelsError(payload, path, response.status);
+      }
+
+      return payload;
+    } catch (error) {
+      const normalizedError = normalizeAiRequestError(error, timeoutMs);
+
+      if (attempt < retries && isRetryableAiError(normalizedError)) {
+        const delay = getAiRetryDelayMs(attempt, AI_RETRY_BASE_DELAY_MS);
+        console.warn(
+          `GitHub Models ${path} failed (${normalizedError.message}); retrying in ${delay}ms`
+        );
+        await sleep(delay);
+        continue;
+      }
+
+      throw normalizedError;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
-  return payload;
+  throw new Error('GitHub Models request failed after retries');
 };
 
 export const chatCompletionText = async ({ messages, maxTokens = 300, temperature = 0.2 }) => {
@@ -85,39 +133,26 @@ export const chatCompletionText = async ({ messages, maxTokens = 300, temperatur
   return content;
 };
 
-export const generateEmbedding = async (text, retries = 3) => {
+export const generateEmbedding = async (text) => {
   const start = Date.now();
 
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    try {
-      const payload = await requestGitHubModels('/embeddings', {
-        model: GITHUB_MODELS_EMBEDDING_MODEL,
-        input: text,
-        encoding_format: 'float',
-      });
+  try {
+    const payload = await requestGitHubModels('/embeddings', {
+      model: GITHUB_MODELS_EMBEDDING_MODEL,
+      input: text,
+      encoding_format: 'float',
+    });
 
-      const embedding = payload?.data?.[0]?.embedding;
-      if (!Array.isArray(embedding)) {
-        throw new Error('GitHub Models returned an invalid embedding payload');
-      }
-
-      console.log(`generateEmbedding: completed in ${Date.now() - start}ms`);
-      return embedding;
-    } catch (error) {
-      if (error.status === 429 && attempt < retries) {
-        const delay = 1000 * Math.pow(2, attempt);
-        console.warn(
-          `generateEmbedding: rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
-      }
-
-      throw new Error(error.message || 'Embedding failed');
+    const embedding = payload?.data?.[0]?.embedding;
+    if (!Array.isArray(embedding)) {
+      throw new Error('GitHub Models returned an invalid embedding payload');
     }
-  }
 
-  throw new Error('Embedding failed after retries');
+    console.log(`generateEmbedding: completed in ${Date.now() - start}ms`);
+    return embedding;
+  } catch (error) {
+    throw new Error(error.message || 'Embedding failed');
+  }
 };
 
 export const describeImage = async (imageBuffer) => {

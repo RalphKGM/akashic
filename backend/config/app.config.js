@@ -15,3 +15,12 @@ export const RATE_LIMIT_MAX_SEARCH =
 
 export const RATE_LIMIT_MAX_MUTATIONS =
   Number(process.env.RATE_LIMIT_MAX_MUTATIONS || 60);
+
+export const AI_REQUEST_TIMEOUT_MS =
+  Number(process.env.AI_REQUEST_TIMEOUT_MS || 30_000);
+
+export const AI_REQUEST_MAX_RETRIES =
+  Number(process.env.AI_REQUEST_MAX_RETRIES || 2);
+
+export const AI_RETRY_BASE_DELAY_MS =
+  Number(process.env.AI_RETRY_BASE_DELAY_MS || 750);

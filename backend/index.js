@@ -6,6 +6,13 @@ import search from './routes/search.js';
 import faces from './routes/faces.js';
 import album from './routes/album.js';
 import { sendErrorResponse } from './utils/http.js';
+import {
+  AI_REQUEST_TIMEOUT_MS,
+  PHOTO_UPLOAD_MAX_BATCH_COUNT,
+  RATE_LIMIT_MAX_MUTATIONS,
+  RATE_LIMIT_MAX_SEARCH,
+  RATE_LIMIT_WINDOW_MS,
+} from './config/app.config.js';
 
 dotenv.config();
 
@@ -35,6 +42,13 @@ app.get('/healthz', (req, res) => {
   res.status(missing.length > 0 ? 503 : 200).json({
     status: missing.length > 0 ? 'degraded' : 'ok',
     missing,
+    config: {
+      aiRequestTimeoutMs: AI_REQUEST_TIMEOUT_MS,
+      photoUploadMaxBatchCount: PHOTO_UPLOAD_MAX_BATCH_COUNT,
+      rateLimitWindowMs: RATE_LIMIT_WINDOW_MS,
+      rateLimitMaxSearch: RATE_LIMIT_MAX_SEARCH,
+      rateLimitMaxMutations: RATE_LIMIT_MAX_MUTATIONS,
+    },
   });
 });
 

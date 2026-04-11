@@ -44,8 +44,9 @@
 - [ ] Automatic ingestion of new photos instead of manual-only uploads
 - [ ] Background sync / backup queue for newly added photos
 - [ ] Wi-Fi only and charging-only upload options
-- [ ] Clear upload states: queued, uploading, failed, retrying, uploaded
-- [ ] Reliable duplicate detection with consumer-friendly messaging
+- [x] Reduce manual upload friction with recent unuploaded photo suggestions
+- [x] Clear upload states: selected, uploading, failed, retrying, uploaded
+- [x] Reliable duplicate detection with consumer-friendly messaging
 - [ ] Smart albums and automatic groupings
 - [ ] People search like `photos with Ralph`
 - [ ] Timeline browsing by date

@@ -6,11 +6,31 @@ import { API_URL } from '../config/api.js';
 
 const resolveDeviceAssetId = (photo) => {
     if (photo?.assetId) return photo.assetId;
+    if (photo?.id) return photo.id;
     return null;
 };
 
 const normalizeApiError = (data, fallbackMessage) =>
   data?.error || data?.message || fallbackMessage;
+
+const normalizePhotoPayload = (photo, fallback = {}) => {
+  if (!photo) return null;
+
+  return {
+    ...photo,
+    device_asset_id: photo.device_asset_id ?? fallback.deviceAssetId ?? null,
+    uri: photo.uri ?? fallback.uri ?? null,
+    descriptive: photo.descriptive ?? null,
+    literal: photo.literal ?? null,
+    category: photo.category ?? null,
+    tags: photo.tags ?? null,
+    is_favorite: Boolean(photo.is_favorite),
+    is_archived: Boolean(photo.is_archived),
+    is_hidden: Boolean(photo.is_hidden),
+    created_at: photo.created_at ?? null,
+    updated_at: photo.updated_at ?? null,
+  };
+};
 
 export const takePhoto = async () => {
     const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
@@ -53,19 +73,10 @@ export const takePhoto = async () => {
         throw new Error(data.error || 'Failed to process photo');
       }
 
-      return {
-        device_asset_id: photo.id || photo.assetId || photo.device_asset_id || null,
+      return normalizePhotoPayload(data.photo, {
+        deviceAssetId: photo.id || photo.assetId || photo.device_asset_id || null,
         uri: result.assets[0].uri,
-        descriptive: data.photo?.descriptive || null,
-        literal: data.photo?.literal || null,
-        id: data.photo?.id || null,
-        category: data.photo?.category,
-        tags: data.photo?.tags,
-        is_favorite: data.photo?.is_favorite ?? false,
-        is_archived: data.photo?.is_archived ?? false,
-        is_hidden: data.photo?.is_hidden ?? false,
-        created_at: data.photo?.created_at || null,
-      };
+      });
     } catch (error) {
         console.log("Upload failed", error);
         throw error;
@@ -94,7 +105,13 @@ export const processSinglePhoto = async (photo) => {
     if (!response.ok) {
         throw new Error(normalizeApiError(data, 'Failed to process photo'));
     }
-    return data;
+    return {
+      ...data,
+      photo: normalizePhotoPayload(data.photo, {
+        deviceAssetId: assetId,
+        uri: photo.uri,
+      }),
+    };
 };
 
 export const processPhotos = async (photos) => {
@@ -192,7 +209,7 @@ export const getAllPhotos = async () => {
         const data = await response.json();
 
         if (response.ok) {
-            return data.result || [];
+            return (data.result || []).map((photo) => normalizePhotoPayload(photo)).filter(Boolean);
         } else {
             throw new Error(normalizeApiError(data, 'Failed to load photos'));
         }
@@ -218,7 +235,7 @@ export const searchPhoto = async (query = '') => {
         const data = await response.json();
 
         if (response.ok) {
-            return data.results || [];
+            return (data.results || []).map((photo) => normalizePhotoPayload(photo)).filter(Boolean);
         } else {
             throw new Error(normalizeApiError(data, 'Failed to search photos'));
         }
@@ -267,7 +284,7 @@ export const updatePhotoDescriptions = async ({ photoId, literal, descriptive })
     throw new Error(normalizeApiError(data, 'Failed to update descriptions'));
   }
 
-  return data.photo;
+  return normalizePhotoPayload(data.photo);
 };
 
 export const updatePhotoPreferences = async ({
@@ -298,5 +315,5 @@ export const updatePhotoPreferences = async ({
     throw new Error(normalizeApiError(data, 'Failed to update photo preferences'));
   }
 
-  return data.photo;
+  return normalizePhotoPayload(data.photo);
 };

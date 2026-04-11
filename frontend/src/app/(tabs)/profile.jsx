@@ -6,6 +6,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../config/supabase';
 import { useThemeContext } from '../../context/ThemeContext.jsx';
 import { getThemeColors } from '../../theme/appColors.js';
+import {
+  DEFAULT_UPLOAD_SETTINGS,
+  getUploadSettings,
+  updateUploadSettings,
+} from '../../service/settingsService.js';
 
 const CACHE_KEY = 'photos_cache';
 
@@ -14,14 +19,29 @@ export default function Profile() {
   const [user, setUser] = useState(null);
   const { isDarkMode, setIsDarkMode } = useThemeContext();
   const colors = getThemeColors(isDarkMode);
-  const [autoBackup, setAutoBackup] = useState(true);
-  const [notifications, setNotifications] = useState(true);
+  const [uploadSettings, setUploadSettings] = useState(DEFAULT_UPLOAD_SETTINGS);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
     });
+
+    let active = true;
+    getUploadSettings().then((settings) => {
+      if (active) {
+        setUploadSettings(settings);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  const handleToggleUploadSetting = async (key, value) => {
+    const next = await updateUploadSettings({ [key]: value });
+    setUploadSettings(next);
+  };
 
   const handleSignOut = async () => {
     Alert.alert(
@@ -94,13 +114,18 @@ export default function Profile() {
     </Pressable>
   );
 
-  const ToggleRow = ({ icon, label, value, onValueChange, isLast }) => (
+  const ToggleRow = ({ icon, label, description, value, onValueChange, isLast }) => (
     <View className={`flex-row items-center justify-between px-4 py-4 ${colors.rowBg} ${!isLast ? `border-b ${colors.divider}` : ''}`}>
       <View className="flex-row items-center flex-1">
         <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${colors.iconBg}`}>
           <Ionicons name={icon} size={18} color={colors.iconColor} />
         </View>
-        <Text className={`text-base font-medium ${colors.textPrimary}`}>{label}</Text>
+        <View className="flex-1">
+          <Text className={`text-base font-medium ${colors.textPrimary}`}>{label}</Text>
+          {description ? (
+            <Text className={`text-xs mt-1 ${colors.textSecondary}`}>{description}</Text>
+          ) : null}
+        </View>
       </View>
       <Switch
         value={value}
@@ -140,6 +165,24 @@ export default function Profile() {
             label="Dark Mode"
             value={isDarkMode}
             onValueChange={setIsDarkMode}
+            isLast
+          />
+        </SettingsSection>
+
+        <SettingsSection title="Upload">
+          <ToggleRow
+            icon="images-outline"
+            label="Show Recent Suggestions"
+            description="Surface recent device photos that are not in your library yet."
+            value={uploadSettings.showRecentSuggestions}
+            onValueChange={(value) => handleToggleUploadSetting('showRecentSuggestions', value)}
+          />
+          <ToggleRow
+            icon="flash-outline"
+            label="Auto-Select Suggestions"
+            description="Preload recent pending photos when you open Upload."
+            value={uploadSettings.autoSelectRecentSuggestions}
+            onValueChange={(value) => handleToggleUploadSetting('autoSelectRecentSuggestions', value)}
             isLast
           />
         </SettingsSection>

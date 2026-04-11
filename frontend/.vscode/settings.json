@@ -1,0 +1,13 @@
+{
+  "tailwindCSS.includeLanguages": {
+    "javascript": "html",
+    "javascriptreact": "html"
+  },
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["className=\"([^\"]*)\"", "([a-zA-Z0-9\\s-:/]+)"]
+  ],
+  "javascript.suggest.paths": true
+}

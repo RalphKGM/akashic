@@ -8,6 +8,7 @@ import {
     updatePhotoDescriptions,
 } from '../services/photo.service.js';
 import { getClientAuthToken, getUserFromToken } from '../utils/getClientAuthToken.js';
+import { ensureNonEmptyString, ensureUuid } from '../utils/validation.js';
 
 export const getAllPhotosController = async (req, res) => {
     try {
@@ -42,6 +43,7 @@ export const getPhotoController = async (req, res) => {
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
         const { id } = req.params;
+        ensureUuid(id, 'Photo ID');
 
         const data = await getPhoto(user, supabase, id);
 
@@ -64,10 +66,7 @@ export const deletePhotoController = async (req, res) => {
         const user = await getUserFromToken(token);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
         const { id } = req.params;
-
-        if (!id) {
-            return res.status(400).json({ error: 'Photo ID is required' });
-        }
+        ensureUuid(id, 'Photo ID');
 
         await deletePhoto(user, supabase, id);
 
@@ -157,10 +156,7 @@ export const searchPhotosController = async (req, res) => {
         const user = await getUserFromToken(token);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { query } = req.body;
-        if (!query || !query.trim()) {
-            return res.status(400).json({ error: 'Search query is required' });
-        }
+        const query = ensureNonEmptyString(req.body?.query, 'Search query');
 
         const { results, count } = await searchPhotos(user, supabase, query);
 
@@ -184,6 +180,7 @@ export const updatePhotoDescriptionsController = async (req, res) => {
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
         const { literal, descriptive } = req.body ?? {};
+        ensureUuid(req.params.id, 'Photo ID');
 
         const photo = await updatePhotoDescriptions({
             supabase,

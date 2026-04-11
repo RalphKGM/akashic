@@ -1,30 +1,9 @@
 import { getCompressedImageBuffer } from '../utils/compressImage.js';
 import { chatCompletionText, describeImage, generateEmbedding } from './ai.service.js';
 import { detectFacesInImage } from './face.service.js';
+import { parsePhotoDescription } from '../utils/photoAiParser.js';
 
 const EMBEDDING_DIMENSION = 1536;
-const VALID_CATEGORIES = ['food', 'nature', 'animals', 'people', 'travel'];
-
-const extractSection = (content, label, nextLabels) => {
-    const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const escapedNextLabels = nextLabels.map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    const endPattern = escapedNextLabels.length > 0 ? `(?=\\[(?:${escapedNextLabels.join('|')})\\]|$)` : '$';
-    const regex = new RegExp(`\\[${escapedLabel}\\]\\s*([\\s\\S]*?)\\s*${endPattern}`, 'i');
-    const match = content.match(regex);
-    return match?.[1]?.trim() ?? '';
-};
-
-const normalizeCategory = (rawCategory) => {
-    if (!rawCategory) return null;
-
-    const values = rawCategory
-        .toLowerCase()
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean);
-
-    return VALID_CATEGORIES.find((value) => values.includes(value)) ?? null;
-};
 
 const rerankWithGPT = async(query, candidates) => {
     if (!candidates || candidates.length === 0) return [];
@@ -143,10 +122,7 @@ export const processPhoto = async (user, supabase, image, device_asset_id) => {
             : Promise.resolve(null),
     ]);
 
-    const literal = extractSection(description, 'LITERAL', ['DESCRIPTIVE', 'TAGS', 'CATEGORY']);
-    const descriptive = extractSection(description, 'DESCRIPTIVE', ['TAGS', 'CATEGORY']);
-    const tags = extractSection(description, 'TAGS', ['CATEGORY']).toLowerCase();
-    const category = normalizeCategory(extractSection(description, 'CATEGORY', []));
+    const { literal, descriptive, tags, category } = parsePhotoDescription(description);
 
     const [descriptiveEmbedding, literalEmbedding] = await Promise.all([
         generateEmbedding(descriptive),

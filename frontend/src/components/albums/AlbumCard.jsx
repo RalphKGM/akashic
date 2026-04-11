@@ -1,8 +1,9 @@
 import { useRef } from 'react';
-import { View, Text, Pressable, Animated, Platform } from 'react-native';
+import { View, Text, Pressable, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { getThemeColors } from '../../theme/appColors.js';
+import { useResolvedPhotoUri } from '../../hooks/useResolvedPhotoUri.js';
 
 export const ALBUM_CARD_SIZE = 180;
 
@@ -14,13 +15,7 @@ export default function AlbumCard({ album, onPress, isDarkMode = false }) {
     album.coverPhoto ||
     album.photos?.[0] ||
     null;
-  const coverUri = coverPhoto?.uri
-    ? coverPhoto.uri
-    : coverPhoto?.device_asset_id
-      ? Platform.OS === 'android'
-        ? `content://media/external/images/media/${coverPhoto.device_asset_id}`
-        : `ph://${coverPhoto.device_asset_id}`
-      : null;
+  const coverUri = useResolvedPhotoUri(coverPhoto);
 
   const handlePressIn = () =>
     Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: true, speed: 30 }).start();

@@ -7,6 +7,7 @@ import {
   renameAlbum,
   deleteAlbum,
 } from '../services/album.service.js';
+import { ensureNonEmptyString, ensureUuid } from '../utils/validation.js';
 
 export const getAlbumsController = async (req, res) => {
   try {
@@ -36,8 +37,9 @@ export const createAlbumController = async (req, res) => {
     const user = await getUserFromToken(token);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { name, cover_photo_id: coverPhotoId = null } = req.body || {};
-    if (!name?.trim()) return res.status(400).json({ error: 'Album name is required' });
+    const name = ensureNonEmptyString(req.body?.name, 'Album name');
+    const coverPhotoId = req.body?.cover_photo_id ?? null;
+    if (coverPhotoId) ensureUuid(coverPhotoId, 'Cover photo ID');
 
     const album = await createAlbum(user, supabase, name, coverPhotoId);
     res.status(201).json({ album });
@@ -64,6 +66,7 @@ export const addPhotosToAlbumController = async (req, res) => {
 
     const { id: albumId } = req.params;
     const { photoIds } = req.body || {};
+    ensureUuid(albumId, 'Album ID');
 
     const result = await addPhotosToAlbum(user, supabase, albumId, photoIds);
     res.status(200).json(result);
@@ -97,6 +100,7 @@ export const removePhotosFromAlbumController = async (req, res) => {
 
     const { id: albumId } = req.params;
     const { photoIds } = req.body || {};
+    ensureUuid(albumId, 'Album ID');
 
     const result = await removePhotosFromAlbum(user, supabase, albumId, photoIds);
     res.status(200).json(result);
@@ -126,7 +130,8 @@ export const renameAlbumController = async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
     const { id: albumId } = req.params;
-    const { name } = req.body || {};
+    const name = ensureNonEmptyString(req.body?.name, 'Album name');
+    ensureUuid(albumId, 'Album ID');
 
     const album = await renameAlbum(user, supabase, albumId, name);
     res.status(200).json({ album });
@@ -160,6 +165,7 @@ export const deleteAlbumController = async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
     const { id: albumId } = req.params;
+    ensureUuid(albumId, 'Album ID');
     const result = await deleteAlbum(user, supabase, albumId);
     res.status(200).json(result);
   } catch (error) {

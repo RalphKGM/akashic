@@ -1,12 +1,12 @@
-import { Modal, View, Pressable, Animated, Text, ScrollView, Dimensions, Alert, ActivityIndicator, TextInput, Keyboard } from 'react-native';
+import { Modal, View, Pressable, Animated, Text, ScrollView, Dimensions, Alert, ActivityIndicator, TextInput, Keyboard, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import PagerView from 'react-native-pager-view';
 import { useThemeContext } from '../context/ThemeContext.jsx';
 import { getThemeColors } from '../theme/appColors.js';
-import { Platform } from 'react-native';
 import ZoomablePhoto from './ZoomablePhoto.jsx';
+import { useResolvedPhotoUri } from '../hooks/useResolvedPhotoUri.js';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -16,6 +16,21 @@ function TagPill({ tag, colors }) {
       <Text className={`text-xs ${colors.tagText}`}>{tag}</Text>
     </View>
   );
+}
+
+function ViewerPage({ photo, shouldRender, isActive }) {
+  const photoData = photo?.item ?? photo;
+  const resolvedUri = useResolvedPhotoUri(photoData);
+
+  if (!shouldRender) {
+    return <View className="w-full h-full bg-black" />;
+  }
+
+  if (!resolvedUri) {
+    return <ActivityIndicator size="large" color="white" />;
+  }
+
+  return <ZoomablePhoto uri={resolvedUri} isActive={isActive} />;
 }
 
 export default function PhotoViewer({
@@ -207,26 +222,16 @@ export default function PhotoViewer({
             }}
           >
             {photos.map((photo, index) => {
-              const assetId = photo.item?.device_asset_id;
-              const uri = assetId
-                ? (photo.item?.uri ?? (Platform.OS === 'android' ? `content://media/external/images/media/${assetId}` : `ph://${assetId}`))
-                : null;
-                
               const key = photo.item?.id ?? photo.id ?? index;
               const shouldRender = Math.abs(index - currentIndex) <= 3;
 
               return (
                 <View key={key} className="flex-1 justify-center items-center">
-                  {shouldRender && uri ? (
-                    <ZoomablePhoto
-                      uri={uri}
-                      isActive={index === currentIndex}
-                    />
-                  ) : !shouldRender ? (
-                    <View className="w-full h-full bg-black" />
-                  ) : (
-                    <ActivityIndicator size="large" color="white" />
-                  )}
+                  <ViewerPage
+                    photo={photo}
+                    shouldRender={shouldRender}
+                    isActive={index === currentIndex}
+                  />
                 </View>
               );
             })}

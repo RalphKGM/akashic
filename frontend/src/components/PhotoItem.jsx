@@ -3,7 +3,7 @@ import { View, Dimensions, Pressable, Text } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeContext } from '../context/ThemeContext.jsx';
-import { Platform } from 'react-native';
+import { useResolvedPhotoUri } from '../hooks/useResolvedPhotoUri.js';
 
 const { width: windowWidth } = Dimensions.get('window');
 
@@ -17,6 +17,7 @@ function PhotoItem({
 }) {
   const { isDarkMode } = useThemeContext();
   const size = (windowWidth - 4) / numColumns - 4;
+  const resolvedUri = useResolvedPhotoUri(item);
 
   const isVideo = item?.isVideo || item?.mediaType === 'video';
   const isGif = (item?.device_asset_id || '').toLowerCase().endsWith('.gif');
@@ -35,13 +36,19 @@ function PhotoItem({
         className={`m-0.5 overflow-hidden ${isDarkMode ? 'bg-zinc-700' : 'bg-gray-200'}`}
         style={{ width: size, height: size }}
       >
-        <Image
-          source={{ uri: item.uri ? item.uri : (Platform.OS === 'android' ? `content://media/external/images/media/${item.device_asset_id}` : `ph://${item.device_asset_id}`) }}
-          style={{ width: size, height: size }}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          transition={150}
-        />
+        {resolvedUri ? (
+          <Image
+            source={{ uri: resolvedUri }}
+            style={{ width: size, height: size }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={150}
+          />
+        ) : (
+          <View className={`flex-1 items-center justify-center ${isDarkMode ? 'bg-zinc-800' : 'bg-gray-100'}`}>
+            <Ionicons name="image-outline" size={18} color={isDarkMode ? '#A1A1AA' : '#9CA3AF'} />
+          </View>
+        )}
 
         {isVideo && (
           <View className="absolute bottom-1 right-1 bg-black/55 rounded p-0.5">

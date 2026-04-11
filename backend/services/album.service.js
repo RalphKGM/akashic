@@ -1,3 +1,5 @@
+import { ensureArray, ensureUuid, isUuid } from '../utils/validation.js';
+
 export const getAlbums = async (user, supabase) => {
   const { data, error } = await supabase
     .from('album')
@@ -35,12 +37,13 @@ export const createAlbum = async (user, supabase, name, coverPhotoId = null) => 
 };
 
 export const addPhotosToAlbum = async (user, supabase, albumId, photoIds = []) => {
-  if (!albumId) throw new Error('Album ID is required');
-  if (!Array.isArray(photoIds) || photoIds.length === 0) {
+  ensureUuid(albumId, 'Album ID');
+  ensureArray(photoIds, 'photoIds');
+  if (photoIds.length === 0) {
     throw new Error('photoIds is required');
   }
 
-  const uniquePhotoIds = [...new Set(photoIds.filter(Boolean))];
+  const uniquePhotoIds = [...new Set(photoIds.filter(isUuid))];
 
   const { data: album, error: albumError } = await supabase
     .from('album')
@@ -96,12 +99,13 @@ export const addPhotosToAlbum = async (user, supabase, albumId, photoIds = []) =
 };
 
 export const removePhotosFromAlbum = async (user, supabase, albumId, photoIds = []) => {
-  if (!albumId) throw new Error('Album ID is required');
-  if (!Array.isArray(photoIds) || photoIds.length === 0) {
+  ensureUuid(albumId, 'Album ID');
+  ensureArray(photoIds, 'photoIds');
+  if (photoIds.length === 0) {
     throw new Error('photoIds is required');
   }
 
-  const uniquePhotoIds = [...new Set(photoIds.filter(Boolean))];
+  const uniquePhotoIds = [...new Set(photoIds.filter(isUuid))];
 
   const { data: album, error: albumError } = await supabase
     .from('album')
@@ -160,7 +164,7 @@ export const removePhotosFromAlbum = async (user, supabase, albumId, photoIds = 
 
 export const renameAlbum = async (user, supabase, albumId, name) => {
   const safeName = name?.trim();
-  if (!albumId) throw new Error('Album ID is required');
+  ensureUuid(albumId, 'Album ID');
   if (!safeName) throw new Error('Album name is required');
 
   const { data, error } = await supabase
@@ -177,7 +181,7 @@ export const renameAlbum = async (user, supabase, albumId, name) => {
 };
 
 export const deleteAlbum = async (user, supabase, albumId) => {
-  if (!albumId) throw new Error('Album ID is required');
+  ensureUuid(albumId, 'Album ID');
 
   const { data: album, error: albumError } = await supabase
     .from('album')

@@ -4,11 +4,11 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test",
     "start": "node index.js",
     "postinstall": "node download-models.js",
     "dev": "nodemon index.js",
-    "check:syntax": "node --check index.js"
+    "check:syntax": "node --check index.js && for f in routes/*.js controller/*.js services/*.js config/*.js utils/*.js; do node --check \"$f\"; done"
   },
   "keywords": [],
   "author": "",

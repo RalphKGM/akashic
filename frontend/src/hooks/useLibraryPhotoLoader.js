@@ -46,7 +46,7 @@ export const useLibraryPhotoLoader = ({ permissionResponse, requestPermission, s
       const missingFromCache = dbPhotos.filter((p) => !cachedIds.has(p.id));
       console.log(`[4] missing from cache: ${missingFromCache.length}`);
 
-      // merge valid cached + missing photos (no URI resolution needed)
+      // merge valid cached + missing photos; individual components resolve local URIs on demand
       const merged = [...validCached, ...missingFromCache]
         .filter((photo) => photo?.id)
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -70,7 +70,7 @@ export const useLibraryPhotoLoader = ({ permissionResponse, requestPermission, s
 
       if (!Array.isArray(assets) || assets.length === 0) return;
 
-      // no resolvePhotoUri needed – expo-image renders device_asset_id directly
+      // individual components resolve local asset URIs on demand
       const sorted = assets
         .filter(Boolean)
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));

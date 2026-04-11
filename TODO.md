@@ -66,6 +66,6 @@
 
 - [x] Add a usable backend start script
 - [ ] Add Railway deployment steps that are verified from a clean machine
-- [ ] Add release checklist for Android and iOS dev/prod builds
-- [ ] Add monitoring/logging guidance
-- [ ] Add rollback notes for backend and mobile releases
+- [x] Add release checklist for Android and iOS dev/prod builds
+- [x] Add monitoring/logging guidance
+- [x] Add rollback notes for backend and mobile releases

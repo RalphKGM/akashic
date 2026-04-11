@@ -67,6 +67,8 @@ EXPO_PUBLIC_API_URL=http://127.0.0.1:3000
 
 `EXPO_PUBLIC_API_URL` is the preferred way to point development builds at your backend.
 
+Release and deployment guidance lives in [docs/OPERATIONS.md](/Users/ralph/projects/ai-photo-main/docs/OPERATIONS.md).
+
 ## Database Setup
 
 Run the SQL in [backend/db.sql](/Users/ralph/projects/ai-photo-main/backend/db.sql) against your Supabase project.

@@ -34,6 +34,7 @@ Set these in Railway before the first deploy:
 5. Verify `GET /healthz` returns `status: ok`.
 6. Smoke test `POST /api/photo`, `GET /api/photos`, and `POST /api/photos/search` against production.
 7. If account deletion is enabled in production, smoke test `DELETE /api/account` against a disposable test user.
+8. Run `npm run audit:device-assets` in [backend](/Users/ralph/projects/ai-photo-main/backend) against production credentials when auditing legacy Android asset IDs.
 
 ### Logging and monitoring
 
@@ -54,11 +55,12 @@ Set these in Railway before the first deploy:
 
 1. Run `npm install` in [frontend](/Users/ralph/projects/ai-photo-main/frontend).
 2. Confirm [frontend/.env.example](/Users/ralph/projects/ai-photo-main/frontend/.env.example) values are mirrored in your local `.env`.
-3. Start the Metro server with `npm run start:dev-client`.
-4. Build Android dev client with `eas build --profile development --platform android`.
-5. Build iOS simulator client with `eas build --profile development-simulator --platform ios`.
-6. Verify login, upload, search, albums, favorites/archive/hide, and face registration on device or simulator.
-7. Verify timeline filters and quick people-search chips in the library.
+3. Run `npm run typecheck`.
+4. Start the Metro server with `npm run start:dev-client`.
+5. Build Android dev client with `eas build --profile development --platform android`.
+6. Build iOS simulator client with `eas build --profile development-simulator --platform ios`.
+7. Verify login, upload, search, albums, favorites/archive/hide, and face registration on device or simulator.
+8. Verify timeline filters and quick people-search chips in the library.
 
 ### Production builds
 

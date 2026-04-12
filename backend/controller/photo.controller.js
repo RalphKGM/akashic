@@ -13,6 +13,7 @@ import { ensureNonEmptyString, ensureUuid } from '../utils/validation.js';
 import { createHttpError, sendErrorResponse } from '../utils/http.js';
 import { PHOTO_UPLOAD_MAX_BATCH_COUNT } from '../config/app.config.js';
 import { logError } from '../utils/logger.js';
+import { cleanupUploadedFiles, readUploadedFile } from '../utils/uploadStorage.js';
 
 export const getAllPhotosController = async (req, res) => {
     try {
@@ -92,8 +93,9 @@ export const processPhotoController = async (req, res) => {
         }
 
         const device_asset_id = String(req.body?.device_asset_id || '').trim() || null;
+        const imageBuffer = await readUploadedFile(req.file);
 
-        const result = await processPhoto(user, supabase, req.file.buffer, device_asset_id);
+        const result = await processPhoto(user, supabase, imageBuffer, device_asset_id);
 
         res.status(200).json({ message: 'Image processed successfully', photo: result });
     } catch (error) {
@@ -106,6 +108,8 @@ export const processPhotoController = async (req, res) => {
         }
         logError('processPhoto error:', error);
         sendErrorResponse(res, error, 'Failed to process image');
+    } finally {
+        await cleanupUploadedFiles(req.file);
     }
 };
 
@@ -147,6 +151,8 @@ export const batchProcessPhotosController = async (req, res) => {
     } catch (error) {
         logError('Batch processing error:', error);
         sendErrorResponse(res, error, 'Batch processing failed');
+    } finally {
+        await cleanupUploadedFiles(req.files);
     }
 };
 

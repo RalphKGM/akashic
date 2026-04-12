@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../config/supabase.js';
 import PhotoItem from '../../components/PhotoItem.jsx';
 import PhotoViewer from '../../components/PhotoViewer.jsx';
-import { usePhotoContext } from '../../context/PhotoContext.jsx';
+import { usePhotoContext } from '../../context/PhotoContext';
 import { useThemeContext } from '../../context/ThemeContext.jsx';
 import { getThemeColors } from '../../theme/appColors.js';
 import { useLibraryPhotoLoader } from '../../hooks/useLibraryPhotoLoader.js';

@@ -1,8 +1,6 @@
 import express from 'express';
-import multer from 'multer';
 import {
     PHOTO_UPLOAD_MAX_BATCH_COUNT,
-    PHOTO_UPLOAD_MAX_FILE_SIZE,
 } from '../config/app.config.js';
 import {
     batchProcessPhotosController,
@@ -14,22 +12,10 @@ import {
     getAllPhotosController
 } from '../controller/photo.controller.js';
 import { mutationRateLimit } from '../middleware/rateLimit.js';
+import { createImageUpload } from '../utils/uploadStorage.js';
 
 const router = express.Router();
-
-const storage = multer.memoryStorage();
-const upload = multer({ 
-    storage, 
-    limits: { fileSize: PHOTO_UPLOAD_MAX_FILE_SIZE },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype?.startsWith('image/')) {
-            cb(null, true);
-            return;
-        }
-
-        cb(new Error('Only image uploads are allowed'));
-    },
-});
+const upload = createImageUpload(PHOTO_UPLOAD_MAX_BATCH_COUNT);
 
 router.post('/photo', mutationRateLimit, upload.single('image'), processPhotoController);
 router.post('/photos/batch', mutationRateLimit, upload.array('images', PHOTO_UPLOAD_MAX_BATCH_COUNT), batchProcessPhotosController);

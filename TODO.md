@@ -29,13 +29,15 @@
 - [x] Add CI for backend syntax and tests
 - [x] Add consistent error formatting across all controllers
 - [x] Add rate limiting for upload and search routes
-- [ ] Reduce multipart memory risk or move to direct-to-storage uploads
+- [x] Reduce multipart memory risk for server-side uploads
+- [ ] Move fully to direct-to-storage uploads
 
 ## P1: Frontend Code Quality
 
-- [ ] Start TypeScript migration for the frontend
+- [x] Start TypeScript migration for the frontend
 - [ ] Type photo, album, face, and auth service responses
-- [ ] Type `PhotoContext` and the library/upload hooks
+- [x] Type `PhotoContext`
+- [ ] Type the library/upload hooks
 - [x] Add frontend verification scripts
 - [ ] Add tests around URI resolution and upload response handling
 

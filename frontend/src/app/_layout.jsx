@@ -2,7 +2,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { supabase } from '../config/supabase.js';
-import { PhotoProvider } from '../context/PhotoContext.jsx';
+import { PhotoProvider } from '../context/PhotoContext';
 import { ThemeProvider, useThemeContext } from '../context/ThemeContext.jsx';
 import '../../global.css';
 

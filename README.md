@@ -92,6 +92,13 @@ npm install
 npm start
 ```
 
+Useful backend maintenance commands:
+
+```bash
+npm run check:syntax
+npm run audit:device-assets
+```
+
 Available endpoints:
 
 - `GET /`
@@ -138,6 +145,7 @@ npm install
 Optional native verification scripts:
 
 ```bash
+npm run typecheck
 npm run check:android-export
 npm run check:ios-export
 ```

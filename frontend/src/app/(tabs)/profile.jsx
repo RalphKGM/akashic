@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../config/supabase';
 import { useThemeContext } from '../../context/ThemeContext.jsx';
-import { usePhotoContext } from '../../context/PhotoContext.jsx';
+import { usePhotoContext } from '../../context/PhotoContext';
 import { getThemeColors } from '../../theme/appColors.js';
 import {
   DEFAULT_UPLOAD_SETTINGS,

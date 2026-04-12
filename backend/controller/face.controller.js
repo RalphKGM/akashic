@@ -3,6 +3,7 @@ import { getClientAuthToken, getUserFromToken } from '../utils/getClientAuthToke
 import { ensureNonEmptyString, ensureUuid } from '../utils/validation.js';
 import { createHttpError, sendErrorResponse } from '../utils/http.js';
 import { logError } from '../utils/logger.js';
+import { cleanupUploadedFiles, readUploadedFile } from '../utils/uploadStorage.js';
 
 // POST /api/faces/register
 export const registerFaceController = async (req, res) => {
@@ -17,7 +18,8 @@ export const registerFaceController = async (req, res) => {
 
         const name = ensureNonEmptyString(req.body?.name, 'Name');
 
-        const descriptor = (await registerFace(req.file.buffer)).map(Number);
+        const imageBuffer = await readUploadedFile(req.file);
+        const descriptor = (await registerFace(imageBuffer)).map(Number);
 
         const { data, error } = await supabase
             .from('known_face')
@@ -34,6 +36,8 @@ export const registerFaceController = async (req, res) => {
     } catch (err) {
         logError('registerFace error:', err);
         sendErrorResponse(res, err, 'Failed to register face');
+    } finally {
+        await cleanupUploadedFiles(req.file);
     }
 };
 

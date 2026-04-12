@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, Animated, ActivityIndicator } from 'react-native';
-import { usePhotoContext } from '../../context/PhotoContext.jsx';
+import { usePhotoContext } from '../../context/PhotoContext';
 import { useThemeContext } from '../../context/ThemeContext.jsx';
 import { getThemeColors } from '../../theme/appColors.js';
 import AlbumDetail from '../../components/albums/AlbumDetail.jsx';

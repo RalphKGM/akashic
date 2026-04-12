@@ -3,6 +3,7 @@ import { chatCompletionText, describeImage, generateEmbedding } from './ai.servi
 import { detectFacesInImage } from './face.service.js';
 import { parsePhotoDescription } from '../utils/photoAiParser.js';
 import { logDebug, logError, logWarn } from '../utils/logger.js';
+import { readUploadedFile } from '../utils/uploadStorage.js';
 
 const EMBEDDING_DIMENSION = 1536;
 
@@ -175,7 +176,10 @@ export const batchProcessPhotos = async (user, supabase, files, deviceAssetIds, 
     for (let i = 0; i < files.length; i += concurrency) {
         const chunk = files.slice(i, i + concurrency);
         const chunkResults = await Promise.allSettled(
-            chunk.map((file, j) => processPhoto(user, supabase, file.buffer, ids[i + j]))
+            chunk.map(async (file, j) => {
+                const imageBuffer = await readUploadedFile(file);
+                return processPhoto(user, supabase, imageBuffer, ids[i + j]);
+            })
         );
 
         chunkResults.forEach((outcome, j) => {

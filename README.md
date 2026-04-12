@@ -68,6 +68,7 @@ EXPO_PUBLIC_API_URL=http://127.0.0.1:3000
 `EXPO_PUBLIC_API_URL` is the preferred way to point development builds at your backend.
 
 Release and deployment guidance lives in [docs/OPERATIONS.md](/Users/ralph/projects/ai-photo-main/docs/OPERATIONS.md).
+Privacy and deletion notes live in [docs/PRIVACY.md](/Users/ralph/projects/ai-photo-main/docs/PRIVACY.md).
 
 ## Database Setup
 
@@ -112,6 +113,7 @@ Available endpoints:
 - `GET /api/faces`
 - `POST /api/faces/register`
 - `DELETE /api/faces/:id`
+- `DELETE /api/account`
 
 All `/api/*` endpoints require `Authorization: Bearer <token>`.
 
@@ -131,6 +133,13 @@ GitHub Models requests now use a configurable timeout and bounded retries so slo
 ```bash
 cd frontend
 npm install
+```
+
+Optional native verification scripts:
+
+```bash
+npm run check:android-export
+npm run check:ios-export
 ```
 
 ### Generate native projects

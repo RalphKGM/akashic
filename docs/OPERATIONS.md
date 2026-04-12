@@ -33,6 +33,7 @@ Set these in Railway before the first deploy:
 4. Deploy from the current `main` branch.
 5. Verify `GET /healthz` returns `status: ok`.
 6. Smoke test `POST /api/photo`, `GET /api/photos`, and `POST /api/photos/search` against production.
+7. If account deletion is enabled in production, smoke test `DELETE /api/account` against a disposable test user.
 
 ### Logging and monitoring
 
@@ -57,6 +58,7 @@ Set these in Railway before the first deploy:
 4. Build Android dev client with `eas build --profile development --platform android`.
 5. Build iOS simulator client with `eas build --profile development-simulator --platform ios`.
 6. Verify login, upload, search, albums, favorites/archive/hide, and face registration on device or simulator.
+7. Verify timeline filters and quick people-search chips in the library.
 
 ### Production builds
 
@@ -70,7 +72,10 @@ Set these in Railway before the first deploy:
    - search
    - albums
    - favorites/archive/hide
+   - timeline filters
+   - quick people-search chips
    - profile cache clear
+   - account deletion on a disposable test account
 
 ### Mobile rollback
 

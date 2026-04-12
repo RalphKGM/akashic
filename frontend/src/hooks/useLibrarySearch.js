@@ -10,12 +10,19 @@ export const useLibrarySearch = () => {
   const [filteredPhotos, setFilteredPhotos] = useState(null);
   const searchAnim = useRef(new Animated.Value(0)).current;
 
-  const handleSearch = useCallback(async () => {
+  const performSearch = useCallback(async (nextQuery = searchQuery) => {
+    const query = String(nextQuery || '').trim();
+    if (!query) {
+      setFilteredPhotos([]);
+      setSearchError('');
+      return;
+    }
+
     try {
       setSearchLoading(true);
       setSearchError('');
 
-      const assets = await searchPhoto(searchQuery);
+      const assets = await searchPhoto(query);
 
       const sorted = assets
         .filter(Boolean)
@@ -30,6 +37,38 @@ export const useLibrarySearch = () => {
       setSearchLoading(false);
     }
   }, [searchQuery]);
+
+  const handleSearch = useCallback(async () => {
+    await performSearch(searchQuery);
+  }, [performSearch, searchQuery]);
+
+  const openSearch = useCallback(() => {
+    if (isSearching) return;
+
+    setIsSearching(true);
+    Animated.timing(searchAnim, {
+      toValue: 1,
+      duration: 250,
+      useNativeDriver: false,
+    }).start();
+  }, [isSearching, searchAnim]);
+
+  const openSearchWithQuery = useCallback(async (query) => {
+    const nextQuery = String(query || '').trim();
+    if (!nextQuery) return;
+
+    if (!isSearching) {
+      setIsSearching(true);
+      Animated.timing(searchAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    }
+
+    setSearchQuery(nextQuery);
+    await performSearch(nextQuery);
+  }, [isSearching, performSearch, searchAnim]);
 
   const toggleSearch = useCallback((isSelectionMode) => {
     if (isSelectionMode) return;
@@ -65,6 +104,8 @@ export const useLibrarySearch = () => {
     filteredPhotos,
     setFilteredPhotos,
     handleSearch,
+    openSearch,
+    openSearchWithQuery,
     toggleSearch,
     titleOpacity,
     searchWidth,

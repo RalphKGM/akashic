@@ -5,12 +5,14 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../config/supabase';
 import { useThemeContext } from '../../context/ThemeContext.jsx';
+import { usePhotoContext } from '../../context/PhotoContext.jsx';
 import { getThemeColors } from '../../theme/appColors.js';
 import {
   DEFAULT_UPLOAD_SETTINGS,
   getUploadSettings,
   updateUploadSettings,
 } from '../../service/settingsService.js';
+import { deleteAccount } from '../../service/accountService.js';
 
 const CACHE_KEY = 'photos_cache';
 
@@ -18,8 +20,10 @@ export default function Profile() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const { isDarkMode, setIsDarkMode } = useThemeContext();
+  const { resetPhotos } = usePhotoContext();
   const colors = getThemeColors(isDarkMode);
   const [uploadSettings, setUploadSettings] = useState(DEFAULT_UPLOAD_SETTINGS);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -55,6 +59,34 @@ export default function Profile() {
           onPress: async () => {
             await supabase.auth.signOut();
             router.replace('/(auth)');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    if (isDeletingAccount) return;
+
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes your account, uploaded photos, albums, and registered faces. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeletingAccount(true);
+              await deleteAccount();
+              resetPhotos();
+              router.replace('/(auth)');
+            } catch (error) {
+              Alert.alert('Delete failed', error.message || 'Failed to delete account.');
+            } finally {
+              setIsDeletingAccount(false);
+            }
           },
         },
       ]
@@ -208,6 +240,22 @@ export default function Profile() {
         </SettingsSection>
 
         {/* Sign Out Button */}
+        <SettingsSection title="Privacy">
+          <SettingsRow
+            icon="shield-checkmark-outline"
+            label="Data & Privacy"
+            value="Docs"
+            onPress={() => Alert.alert('Privacy', 'See docs/PRIVACY.md in the repository for data handling and deletion details.')}
+          />
+          <SettingsRow
+            icon="trash"
+            label="Delete Account"
+            value={isDeletingAccount ? 'Deleting...' : null}
+            onPress={handleDeleteAccount}
+            isLast
+          />
+        </SettingsSection>
+
         <View className="mx-3 mb-8">
           <Pressable onPress={handleSignOut} className="rounded-2xl px-4 py-4">
             <View className="flex-row items-center justify-center">

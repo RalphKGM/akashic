@@ -10,11 +10,17 @@ export const PhotoProvider = ({ children }) => {
         setPhotos((prev) => [...prev, newPhoto]);
     }, []);
 
+    const resetPhotos = useCallback(() => {
+        setPhotos([]);
+        setUploadProgress(null);
+    }, []);
+
     return (
         <PhotoContext.Provider value={{ 
             photos, 
             setPhotos, 
             appendPhoto,
+            resetPhotos,
             uploadProgress,
             setUploadProgress,
         }}>

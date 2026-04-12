@@ -16,7 +16,7 @@
 - [x] Add EAS dev-build profiles for Android and iOS simulator
 - [x] Stop relying on filename-derived Android asset IDs for new uploads
 - [x] Resolve local photo URIs through MediaLibrary instead of hard-coded URI patterns
-- [ ] Audit old uploaded records that still contain invalid Android `device_asset_id` values
+- [ ] Audit old uploaded records that still contain invalid Android `device_asset_id` values against a real database
 - [ ] Decide whether `device_asset_id` remains temporary metadata or is replaced by cloud storage paths
 - [ ] Test local rendering after restart, cache clear, and reinstall on Android
 
@@ -36,7 +36,7 @@
 - [ ] Start TypeScript migration for the frontend
 - [ ] Type photo, album, face, and auth service responses
 - [ ] Type `PhotoContext` and the library/upload hooks
-- [ ] Add frontend linting and test scripts
+- [x] Add frontend verification scripts
 - [ ] Add tests around URI resolution and upload response handling
 
 ## P2: Consumer Product Features
@@ -48,8 +48,8 @@
 - [x] Clear upload states: selected, uploading, failed, retrying, uploaded
 - [x] Reliable duplicate detection with consumer-friendly messaging
 - [ ] Smart albums and automatic groupings
-- [ ] People search like `photos with Ralph`
-- [ ] Timeline browsing by date
+- [x] People search like `photos with Ralph`
+- [x] Timeline browsing by date
 - [ ] Location-based browsing and filters
 - [x] Favorites, archive, and hide actions
 - [ ] Cross-device access with stable cloud-backed photo storage
@@ -58,9 +58,9 @@
 ## P2: Privacy And Data Handling
 
 - [x] Remove OpenAI-specific stored-request behavior
-- [ ] Document privacy for photos, embeddings, and known face descriptors
-- [ ] Add account deletion / full data deletion flow
-- [ ] Minimize sensitive logs in production mode
+- [x] Document privacy for photos, embeddings, and known face descriptors
+- [x] Add account deletion / full data deletion flow
+- [x] Minimize sensitive logs in production mode
 
 ## P3: Deployment Readiness
 

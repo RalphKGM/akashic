@@ -2,6 +2,7 @@ import { registerFace, detectFacesInImage } from '../services/face.service.js';
 import { getClientAuthToken, getUserFromToken } from '../utils/getClientAuthToken.js';
 import { ensureNonEmptyString, ensureUuid } from '../utils/validation.js';
 import { createHttpError, sendErrorResponse } from '../utils/http.js';
+import { logError } from '../utils/logger.js';
 
 // POST /api/faces/register
 export const registerFaceController = async (req, res) => {
@@ -31,7 +32,7 @@ export const registerFaceController = async (req, res) => {
         if (error) throw error;
         res.status(201).json({ face: data });
     } catch (err) {
-        console.error('registerFace error:', err.message);
+        logError('registerFace error:', err);
         sendErrorResponse(res, err, 'Failed to register face');
     }
 };

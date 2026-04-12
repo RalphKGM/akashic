@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 import canvas from 'canvas';
 import { convertHeicImage } from '../utils/compressImage.js';
+import { logDebug, logError } from '../utils/logger.js';
 
 const require = createRequire(import.meta.url);
 const faceapi = require('face-api.js');
@@ -36,7 +37,7 @@ const initFaceApi = async () => {
     ]);
 
     modelsLoaded = true;
-    console.log('Face recognition models loaded');
+    logDebug('Face recognition models loaded');
 };
 
 const bufferToCanvas = async (buffer) => {
@@ -50,14 +51,14 @@ const bufferToCanvas = async (buffer) => {
 export const registerFace = async (imageBuffer) => {
     await initFaceApi();
     const img = await bufferToCanvas(imageBuffer);
-    console.log(`[registerFace] image size: ${img.width}x${img.height}`);
+    logDebug(`[registerFace] image size: ${img.width}x${img.height}`);
     const detection = await faceapi
         .detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.7 }))
         .withFaceLandmarks()
         .withFaceDescriptor();
-    console.log(`[registerFace] detection: ${detection ? 'found' : 'NOT FOUND'}`);
+    logDebug(`[registerFace] detection: ${detection ? 'found' : 'NOT FOUND'}`);
     if (!detection) throw new Error('No face detected. Use a clear, front-facing photo.');
-    console.log(`[registerFace] descriptor length: ${detection.descriptor.length}`);
+    logDebug(`[registerFace] descriptor length: ${detection.descriptor.length}`);
     return Array.from(detection.descriptor);
 };
 
@@ -66,14 +67,14 @@ export const detectFacesInImage = async (imageBuffer, knownFaces) => {
     try {
         await initFaceApi();
         const img = await bufferToCanvas(imageBuffer);
-        console.log(`[detectFaces] image size: ${img.width}x${img.height}, known faces: ${knownFaces.map(f => f.name).join(', ')}`);
+        logDebug(`[detectFaces] image size: ${img.width}x${img.height}, known faces: ${knownFaces.map(f => f.name).join(', ')}`);
 
         const detections = await faceapi
             .detectAllFaces(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.7 }))
             .withFaceLandmarks()
             .withFaceDescriptors();
 
-        console.log(`[detectFaces] faces detected in image: ${detections?.length ?? 0}`);
+        logDebug(`[detectFaces] faces detected in image: ${detections?.length ?? 0}`);
         if (!detections?.length) return null;
 
         const labeled = knownFaces.map(f =>
@@ -84,15 +85,15 @@ export const detectFacesInImage = async (imageBuffer, knownFaces) => {
         const names = new Set();
         for (const d of detections) {
             const match = matcher.findBestMatch(d.descriptor);
-            console.log(`[detectFaces] match: ${match.label} (distance: ${match.distance.toFixed(3)})`);
+            logDebug(`[detectFaces] match: ${match.label} (distance: ${match.distance.toFixed(3)})`);
             if (match.label !== 'unknown') names.add(match.label);
         }
 
         const result = names.size > 0 ? [...names].join(', ') : null;
-        console.log(`[detectFaces] result: ${result ?? 'none'}`);
+        logDebug(`[detectFaces] result: ${result ?? 'none'}`);
         return result;
     } catch (err) {
-        console.error('detectFacesInImage error:', err.message);
+        logError('detectFacesInImage error:', err);
         return null;
     }
 };

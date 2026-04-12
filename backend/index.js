@@ -5,7 +5,9 @@ import photo from './routes/photo.js';
 import search from './routes/search.js';
 import faces from './routes/faces.js';
 import album from './routes/album.js';
+import account from './routes/account.js';
 import { sendErrorResponse } from './utils/http.js';
+import { logError, logInfo } from './utils/logger.js';
 import {
   AI_REQUEST_TIMEOUT_MS,
   PHOTO_UPLOAD_MAX_BATCH_COUNT,
@@ -27,6 +29,7 @@ app.use('/api', photo);
 app.use('/api', search);
 app.use('/api', faces);
 app.use('/api', album);
+app.use('/api', account);
 
 app.get('/', (req, res) => {
   res.json({ message: 'AI Photo Gallery API is running!' });
@@ -37,6 +40,10 @@ app.get('/healthz', (req, res) => {
 
   if (!process.env.GITHUB_MODELS_TOKEN && !process.env.GPT_TOKEN && !process.env.VECTOR_TOKEN) {
     missing.push('GITHUB_MODELS_TOKEN');
+  }
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    missing.push('SUPABASE_SERVICE_ROLE_KEY');
   }
 
   res.status(missing.length > 0 ? 503 : 200).json({
@@ -58,7 +65,7 @@ app.use((err, req, res, next) => {
     return;
   }
 
-  console.error('Unhandled request error:', err.message);
+  logError('Unhandled request error:', err);
   sendErrorResponse(
     res,
     {
@@ -76,5 +83,5 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logInfo(`Server running on port ${PORT}`);
 });

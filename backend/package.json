@@ -8,7 +8,8 @@
     "start": "node index.js",
     "postinstall": "node download-models.js",
     "dev": "nodemon index.js",
-    "check:syntax": "node --check index.js && for f in routes/*.js controller/*.js services/*.js config/*.js utils/*.js; do node --check \"$f\"; done"
+    "check:syntax": "node --check index.js && for f in routes/*.js controller/*.js services/*.js config/*.js utils/*.js scripts/*.js; do node --check \"$f\"; done",
+    "audit:device-assets": "node scripts/audit-device-asset-ids.js"
   },
   "keywords": [],
   "author": "",

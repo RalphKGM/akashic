@@ -16,6 +16,7 @@ import {
   isRetryableAiError,
   normalizeAiRequestError,
 } from '../utils/aiRequest.js';
+import { logDebug, logWarn } from '../utils/logger.js';
 
 dotenv.config();
 
@@ -101,7 +102,7 @@ const requestGitHubModels = async (
 
       if (attempt < retries && isRetryableAiError(normalizedError)) {
         const delay = getAiRetryDelayMs(attempt, AI_RETRY_BASE_DELAY_MS);
-        console.warn(
+        logWarn(
           `GitHub Models ${path} failed (${normalizedError.message}); retrying in ${delay}ms`
         );
         await sleep(delay);
@@ -148,7 +149,7 @@ export const generateEmbedding = async (text) => {
       throw new Error('GitHub Models returned an invalid embedding payload');
     }
 
-    console.log(`generateEmbedding: completed in ${Date.now() - start}ms`);
+    logDebug(`generateEmbedding: completed in ${Date.now() - start}ms`);
     return embedding;
   } catch (error) {
     throw new Error(error.message || 'Embedding failed');
@@ -157,7 +158,7 @@ export const generateEmbedding = async (text) => {
 
 export const describeImage = async (imageBuffer) => {
   const start = Date.now();
-  console.log('describeImage: sending request to GitHub Models...');
+  logDebug('describeImage: sending request to GitHub Models...');
 
   try {
     const content = await chatCompletionText({
@@ -183,7 +184,7 @@ export const describeImage = async (imageBuffer) => {
       temperature: 0.1,
     });
 
-    console.log(`describeImage: completed in ${Date.now() - start}ms`);
+    logDebug(`describeImage: completed in ${Date.now() - start}ms`);
     return content;
   } catch (error) {
     if (error.status === 429) {

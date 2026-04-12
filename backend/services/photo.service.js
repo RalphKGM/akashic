@@ -2,6 +2,7 @@ import { getCompressedImageBuffer } from '../utils/compressImage.js';
 import { chatCompletionText, describeImage, generateEmbedding } from './ai.service.js';
 import { detectFacesInImage } from './face.service.js';
 import { parsePhotoDescription } from '../utils/photoAiParser.js';
+import { logDebug, logError, logWarn } from '../utils/logger.js';
 
 const EMBEDDING_DIMENSION = 1536;
 
@@ -49,7 +50,7 @@ Numbers only, no explanation.`
         return candidates.filter((_, i) => keepIndices.has(i));
 
     } catch (err) {
-        console.warn('Rerank failed, returning all candidates:', err.message);
+        logWarn('Rerank failed, returning all candidates:', err.message);
         return candidates;
     }
 }
@@ -80,7 +81,7 @@ export const getPhoto = async (user, supabase, id) => {
 export const deletePhoto = async (user, supabase, id) => {
     if (!id) throw new Error('Photo ID is required');
 
-    console.log('Deleting photo id:', id);
+    logDebug('Deleting photo id:', id);
 
     const { data, error } = await supabase
         .from('photo')
@@ -89,11 +90,11 @@ export const deletePhoto = async (user, supabase, id) => {
         .eq('user_id', user.id);
 
     if (error) {
-        console.error('Delete error:', error);
+        logError('Delete error:', error);
         throw error;
     }
 
-    console.log('Photo deleted successfully:', id);
+    logDebug('Photo deleted successfully:', id);
     return data;
 };
 
@@ -157,7 +158,7 @@ export const processPhoto = async (user, supabase, image, device_asset_id) => {
 
     if (insertError) throw insertError;
 
-    console.log(`processPhoto: completed in ${Date.now() - start}ms`);
+    logDebug(`processPhoto: completed in ${Date.now() - start}ms`);
     return insertData;
 };
 
@@ -204,7 +205,7 @@ export const searchPhotos = async (user, supabase, query) => {
         rrf_k: 50,
     });
 
-    console.log(`Hybrid search results: ${data?.length ?? 0}`);
+    logDebug(`Hybrid search results: ${data?.length ?? 0}`);
     if (error) throw error;
 
     if (!data || data.length === 0) return { results: [], count: 0 };

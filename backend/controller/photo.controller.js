@@ -12,6 +12,7 @@ import { getClientAuthToken, getUserFromToken } from '../utils/getClientAuthToke
 import { ensureNonEmptyString, ensureUuid } from '../utils/validation.js';
 import { createHttpError, sendErrorResponse } from '../utils/http.js';
 import { PHOTO_UPLOAD_MAX_BATCH_COUNT } from '../config/app.config.js';
+import { logError } from '../utils/logger.js';
 
 export const getAllPhotosController = async (req, res) => {
     try {
@@ -28,7 +29,7 @@ export const getAllPhotosController = async (req, res) => {
             result
         });
     } catch (error) {
-        console.error('getAllPhotos error:', error);
+        logError('getAllPhotos error:', error);
         sendErrorResponse(res, error, 'Failed to fetch photos');
     }
 };
@@ -73,7 +74,7 @@ export const deletePhotoController = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Delete photo error:', error);
+        logError('Delete photo error:', error);
         sendErrorResponse(res, error, 'Failed to delete photo');
     }
 };
@@ -103,7 +104,7 @@ export const processPhotoController = async (req, res) => {
                 'Duplicate image'
             );
         }
-        console.error('error:', error);
+        logError('processPhoto error:', error);
         sendErrorResponse(res, error, 'Failed to process image');
     }
 };
@@ -144,7 +145,7 @@ export const batchProcessPhotosController = async (req, res) => {
             errors: errors.length > 0 ? errors : undefined
         });
     } catch (error) {
-        console.error('Batch processing error:', error);
+        logError('Batch processing error:', error);
         sendErrorResponse(res, error, 'Batch processing failed');
     }
 };
@@ -164,7 +165,7 @@ export const searchPhotosController = async (req, res) => {
 
         res.status(200).json({ results, count });
     } catch (error) {
-        console.error('Search error:', error);
+        logError('Search error:', error);
         sendErrorResponse(res, error, 'Search failed');
     }
 };
@@ -194,7 +195,7 @@ export const updatePhotoDescriptionsController = async (req, res) => {
             photo,
         });
     } catch (err) {
-        console.error('Update photo descriptions error:', err);
+        logError('Update photo descriptions error:', err);
         sendErrorResponse(res, err, 'Failed to update photo descriptions');
     }
 };
@@ -224,7 +225,7 @@ export const updatePhotoPreferencesController = async (req, res) => {
             photo,
         });
     } catch (error) {
-        console.error('Update photo preferences error:', error);
+        logError('Update photo preferences error:', error);
         sendErrorResponse(res, error, 'Failed to update photo preferences');
     }
 };

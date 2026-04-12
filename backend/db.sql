@@ -8,7 +8,7 @@ DROP TABLE IF EXISTS public.photo;
 
 CREATE TABLE IF NOT EXISTS public.photo (
     id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id               uuid DEFAULT auth.uid() REFERENCES auth.users(id),
+    user_id               uuid DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
     device_asset_id       text NULL,
     descriptive           text NOT NULL,
     literal               text NOT NULL,
@@ -197,7 +197,7 @@ WITH CHECK (
 
 CREATE TABLE IF NOT EXISTS public.known_face (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   descriptor FLOAT8[] NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()

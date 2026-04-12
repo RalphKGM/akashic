@@ -20,9 +20,11 @@ import { getThemeColors } from '../../theme/appColors.js';
 import { useLibraryPhotoLoader } from '../../hooks/useLibraryPhotoLoader.js';
 import { useLibrarySearch } from '../../hooks/useLibrarySearch.js';
 import { useLibraryPhotoActions } from '../../hooks/useLibraryPhotoActions.js';
+import { getKnownFaces } from '../../service/faceService.js';
 
 const numColumns = 4;
 const FILTERS = ['library', 'favorites', 'archived', 'hidden', 'all'];
+const DATE_FILTERS = ['anytime', 'today', 'week', 'month', 'year'];
 
 const matchesPhotoFilter = (photo, filter) => {
   if (!photo) return false;
@@ -42,6 +44,36 @@ const matchesPhotoFilter = (photo, filter) => {
   }
 };
 
+const matchesDateFilter = (photo, filter) => {
+  if (!photo?.created_at || filter === 'anytime') return true;
+
+  const createdAt = new Date(photo.created_at);
+  if (Number.isNaN(createdAt.getTime())) return true;
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  switch (filter) {
+    case 'today':
+      return createdAt >= startOfToday;
+    case 'week': {
+      const startOfWeek = new Date(startOfToday);
+      startOfWeek.setDate(startOfWeek.getDate() - 6);
+      return createdAt >= startOfWeek;
+    }
+    case 'month': {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return createdAt >= startOfMonth;
+    }
+    case 'year': {
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      return createdAt >= startOfYear;
+    }
+    default:
+      return true;
+  }
+};
+
 export default function Library() {
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions({
     mediaTypes: 'photo',
@@ -51,6 +83,8 @@ export default function Library() {
   const router = useRouter();
   const flatListRef = useRef(null);
   const [activeFilter, setActiveFilter] = useState('library');
+  const [activeDateFilter, setActiveDateFilter] = useState('anytime');
+  const [knownFaces, setKnownFaces] = useState([]);
 
   const {
     isSearching,
@@ -61,6 +95,7 @@ export default function Library() {
     filteredPhotos,
     setFilteredPhotos,
     handleSearch,
+    openSearchWithQuery,
     toggleSearch,
     titleOpacity,
     searchWidth,
@@ -68,13 +103,13 @@ export default function Library() {
   } = useLibrarySearch();
 
   const displayPhotos = useMemo(
-    () => photos.filter((photo) => matchesPhotoFilter(photo, activeFilter)),
-    [photos, activeFilter]
+    () => photos.filter((photo) => matchesPhotoFilter(photo, activeFilter) && matchesDateFilter(photo, activeDateFilter)),
+    [photos, activeFilter, activeDateFilter]
   );
 
   const displayFilteredPhotos = useMemo(
-    () => (filteredPhotos || []).filter((photo) => matchesPhotoFilter(photo, activeFilter)),
-    [filteredPhotos, activeFilter]
+    () => (filteredPhotos || []).filter((photo) => matchesPhotoFilter(photo, activeFilter) && matchesDateFilter(photo, activeDateFilter)),
+    [filteredPhotos, activeFilter, activeDateFilter]
   );
 
   const {
@@ -139,6 +174,29 @@ export default function Library() {
     return () => { mounted = false; };
   }, [handleGetPhotos]);
 
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!active || !session) return;
+
+      try {
+        const faces = await getKnownFaces();
+        if (active) {
+          setKnownFaces(faces || []);
+        }
+      } catch {
+        if (active) {
+          setKnownFaces([]);
+        }
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const renderPhotoItem = useCallback(
     ({ item }) => (
       <PhotoItem
@@ -168,12 +226,15 @@ export default function Library() {
   const handleUpdatePreferencesFromViewer = useCallback(
     async (payload) => {
       const updated = await handleUpdatePhotoPreferences(payload);
-      if (updated && !matchesPhotoFilter(updated, activeFilter)) {
+      if (
+        updated &&
+        (!matchesPhotoFilter(updated, activeFilter) || !matchesDateFilter(updated, activeDateFilter))
+      ) {
         setSelectedIndex(null);
       }
       return updated;
     },
-    [activeFilter, handleUpdatePhotoPreferences, setSelectedIndex]
+    [activeDateFilter, activeFilter, handleUpdatePhotoPreferences, setSelectedIndex]
   );
 
   return (
@@ -276,6 +337,46 @@ export default function Library() {
                 );
               })}
             </View>
+            <View className="flex-row flex-wrap gap-2 mt-2">
+              {DATE_FILTERS.map((filter) => {
+                const isActive = activeDateFilter === filter;
+                return (
+                  <Pressable
+                    key={filter}
+                    onPress={() => setActiveDateFilter(filter)}
+                    className={`px-3 py-1.5 rounded-full border ${
+                      isActive ? 'border-black bg-black' : isDarkMode ? 'border-zinc-700 bg-zinc-800' : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-semibold ${
+                        isActive ? 'text-white' : colors.textSecondary
+                      }`}
+                    >
+                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {knownFaces.length > 0 && (
+              <View className="mt-3">
+                <Text className={`text-xs mb-2 ${colors.count}`}>People</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {knownFaces.slice(0, 8).map((face) => (
+                    <Pressable
+                      key={face.id}
+                      onPress={() => openSearchWithQuery(`photos with ${face.name}`)}
+                      className={`px-3 py-1.5 rounded-full ${colors.tagBg}`}
+                    >
+                      <Text className={`${colors.tagText} text-xs font-semibold`}>
+                        {face.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
           </>
         )}
       </View>

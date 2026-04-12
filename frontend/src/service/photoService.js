@@ -86,6 +86,7 @@ export const takePhoto = async () => {
 export const processSinglePhoto = async (photo) => {
     const token = await getSession();
     const assetId = resolveDeviceAssetId(photo);
+    console.log(`[photoService] processSinglePhoto -> ${API_URL}/api/photo`);
 
     const formData = new FormData();
     formData.append('image', { uri: photo.uri, name: 'photo.jpg', type: 'image/jpeg' });
@@ -198,6 +199,7 @@ export const processPhotos = async (photos) => {
 export const getAllPhotos = async () => {
     try {
         const token = await getSession();
+        console.log(`[photoService] getAllPhotos -> ${API_URL}/api/photos`);
 
         const response = await fetch(`${API_URL}/api/photos`, {
             method: 'GET',
@@ -222,6 +224,7 @@ export const getAllPhotos = async () => {
 export const searchPhoto = async (query = '') => {
     try {
         const token = await getSession();
+        console.log(`[photoService] searchPhoto -> ${API_URL}/api/photos/search`);
 
         const response = await fetch(`${API_URL}/api/photos/search`, {
             method: 'POST',

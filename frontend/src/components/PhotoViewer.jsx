@@ -1,12 +1,12 @@
 import { Modal, View, Pressable, Animated, Text, ScrollView, Dimensions, Alert, ActivityIndicator, TextInput, Keyboard, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import PagerView from 'react-native-pager-view';
 import { useThemeContext } from '../context/ThemeContext.jsx';
 import { getThemeColors } from '../theme/appColors.js';
 import ZoomablePhoto from './ZoomablePhoto.jsx';
-import { useResolvedPhotoUri } from '../hooks/useResolvedPhotoUri.js';
+import { getResolvedPhotoUri } from '../hooks/useResolvedPhotoUri.js';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -18,16 +18,22 @@ function TagPill({ tag, colors }) {
   );
 }
 
-function ViewerPage({ photo, shouldRender, isActive }) {
+const getPhotoKey = (photo, fallbackIndex) => {
   const photoData = photo?.item ?? photo;
-  const resolvedUri = useResolvedPhotoUri(photoData);
+  return photoData?.id ?? photoData?.device_asset_id ?? fallbackIndex;
+};
 
+function ViewerPage({ resolvedUri, shouldRender, isActive }) {
   if (!shouldRender) {
     return <View className="w-full h-full bg-black" />;
   }
 
   if (!resolvedUri) {
-    return <ActivityIndicator size="large" color="white" />;
+    return (
+      <View className="w-full h-full items-center justify-center bg-black">
+        <ActivityIndicator size="large" color="white" />
+      </View>
+    );
   }
 
   return <ZoomablePhoto uri={resolvedUri} isActive={isActive} />;
@@ -47,6 +53,7 @@ export default function PhotoViewer({
   const colors = getThemeColors(isDarkMode);
   const pagerRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [resolvedUris, setResolvedUris] = useState({});
 
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -79,6 +86,19 @@ export default function PhotoViewer({
     hasDescriptionChange &&
     literalDraft.trim().length > 0 &&
     descriptiveDraft.trim().length > 0;
+
+  const seedResolvedUris = useMemo(
+    () =>
+      photos.reduce((acc, photo, index) => {
+        const photoData = photo?.item ?? photo;
+        const key = getPhotoKey(photo, index);
+        if (key && photoData?.uri) {
+          acc[key] = photoData.uri;
+        }
+        return acc;
+      }, {}),
+    [photos]
+  );
 
   useEffect(() => {
     setLiteralDraft(currentLiteral);
@@ -149,6 +169,7 @@ export default function PhotoViewer({
   useEffect(() => {
     if (visible) {
       setCurrentIndex(initialIndex);
+      setResolvedUris(seedResolvedUris);
       setTimeout(() => {
         pagerRef.current?.setPageWithoutAnimation(initialIndex);
       }, 0);
@@ -173,8 +194,51 @@ export default function PhotoViewer({
       backdropAnim.setValue(0);
       keyboardAnim.setValue(0);
       setSheetVisible(false);
+      setResolvedUris({});
     }
-  }, [visible, initialIndex]);
+  }, [visible, initialIndex, seedResolvedUris]);
+
+  useEffect(() => {
+    if (!visible || !photos?.length) return;
+
+    const resolveWindow = async () => {
+      const start = photos.length <= 12 ? 0 : Math.max(0, currentIndex - 4);
+      const end = photos.length <= 12 ? photos.length : Math.min(photos.length, currentIndex + 5);
+      const candidates = photos.slice(start, end);
+      const entries = await Promise.all(
+        candidates.map(async (photo, offset) => {
+          const absoluteIndex = start + offset;
+          const photoData = photo?.item ?? photo;
+          const key = getPhotoKey(photo, absoluteIndex);
+          if (!key || !photoData) return null;
+
+          const resolvedUri = await getResolvedPhotoUri(photoData);
+          return resolvedUri ? [key, resolvedUri] : null;
+        })
+      );
+
+      const nextEntries = entries.filter(Boolean);
+      if (nextEntries.length === 0) return;
+
+      setResolvedUris((prev) => {
+        let changed = false;
+        const next = { ...prev };
+
+        nextEntries.forEach(([key, uri]) => {
+          if (next[key] !== uri) {
+            next[key] = uri;
+            changed = true;
+          }
+        });
+
+        return changed ? next : prev;
+      });
+    };
+
+    resolveWindow().catch(() => {
+      // Best-effort only. Viewer falls back to a loading state if resolution fails.
+    });
+  }, [currentIndex, photos, visible]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -239,19 +303,22 @@ export default function PhotoViewer({
             ref={pagerRef}
             style={{ flex: 1 }}
             initialPage={initialIndex}
+            offscreenPageLimit={3}
             onPageSelected={(e) => {
               setCurrentIndex(e.nativeEvent.position);
               if (sheetVisible) closeSheet();
             }}
           >
             {photos.map((photo, index) => {
-              const key = photo.item?.id ?? photo.id ?? index;
-              const shouldRender = Math.abs(index - currentIndex) <= 3;
+              const key = getPhotoKey(photo, index);
+              const shouldRender =
+                photos.length <= 12 || Math.abs(index - currentIndex) <= 3;
+              const resolvedUri = resolvedUris[key] ?? (photo?.item ?? photo)?.uri ?? null;
 
               return (
                 <View key={key} className="flex-1 justify-center items-center">
                   <ViewerPage
-                    photo={photo}
+                    resolvedUri={resolvedUri}
                     shouldRender={shouldRender}
                     isActive={index === currentIndex}
                   />

@@ -17,7 +17,7 @@ export const useLibraryPhotoActions = ({
   const [selectedPhotoIds, setSelectedPhotoIds] = useState([]);
   const [isDeletingSelectedPhotos, setIsDeletingSelectedPhotos] = useState(false);
 
-  const sourcePhotos = displayFilteredPhotos ?? filteredPhotos ?? displayPhotos ?? photos;
+  const sourcePhotos = displayFilteredPhotos ?? displayPhotos ?? photos;
   const selectedCount = selectedPhotoIds.length;
   const viewerPhotos = useMemo(
     () => sourcePhotos.map((photo) => ({ item: photo })),

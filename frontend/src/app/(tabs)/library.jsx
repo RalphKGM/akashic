@@ -107,10 +107,13 @@ export default function Library() {
     [photos, activeFilter, activeDateFilter]
   );
 
-  const displayFilteredPhotos = useMemo(
-    () => (filteredPhotos || []).filter((photo) => matchesPhotoFilter(photo, activeFilter) && matchesDateFilter(photo, activeDateFilter)),
-    [filteredPhotos, activeFilter, activeDateFilter]
-  );
+  const displayFilteredPhotos = useMemo(() => {
+    if (filteredPhotos === null) return null;
+
+    return filteredPhotos.filter(
+      (photo) => matchesPhotoFilter(photo, activeFilter) && matchesDateFilter(photo, activeDateFilter)
+    );
+  }, [filteredPhotos, activeFilter, activeDateFilter]);
 
   const {
     viewerPhotos,
@@ -152,6 +155,32 @@ export default function Library() {
       setIsRefreshing(false);
     }
   }, [handleGetPhotos]);
+
+  const handlePhotoResolvedUri = useCallback((photoId, uri) => {
+    if (!photoId || !uri) return;
+
+    setPhotos((prev) => {
+      let changed = false;
+      const next = prev.map((photo) => {
+        if (photo.id !== photoId || photo.uri === uri) return photo;
+        changed = true;
+        return { ...photo, uri };
+      });
+      return changed ? next : prev;
+    });
+
+    setFilteredPhotos((prev) => {
+      if (!Array.isArray(prev)) return prev;
+
+      let changed = false;
+      const next = prev.map((photo) => {
+        if (photo.id !== photoId || photo.uri === uri) return photo;
+        changed = true;
+        return { ...photo, uri };
+      });
+      return changed ? next : prev;
+    });
+  }, [setFilteredPhotos, setPhotos]);
 
   // scroll to bottom only when new photos are uploaded (not on initial load)
   const prevPhotoCountRef = useRef(0);
@@ -206,9 +235,10 @@ export default function Library() {
         item={item}
         isSelected={selectedPhotoIds.includes(item.id)}
         selectionMode={isSelectionMode}
+        onResolvedUri={handlePhotoResolvedUri}
       />
     ),
-    [handlePressPhoto, handleLongPressPhoto, selectedPhotoIds, isSelectionMode]
+    [handlePhotoResolvedUri, handlePressPhoto, handleLongPressPhoto, selectedPhotoIds, isSelectionMode]
   );
 
   const uploadPct = uploadProgress

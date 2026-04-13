@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
-import { View } from 'react-native';
-import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
+import { View, Image as RNImage, ActivityIndicator, Text } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
   clamp,
@@ -15,6 +14,8 @@ const DOUBLE_TAP_SCALE = 2.5;
 const RESET_THRESHOLD = 1.08;
 
 export default function ZoomablePhoto({ uri, isActive }) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const scale = useSharedValue(1);
   const startScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -40,6 +41,11 @@ export default function ZoomablePhoto({ uri, isActive }) {
       resetZoom(false);
     }
   }, [isActive]);
+
+  useEffect(() => {
+    setIsLoaded(false);
+    setLoadError(null);
+  }, [uri]);
 
   const pinchGesture = Gesture.Pinch()
     .onUpdate((event) => {
@@ -110,14 +116,34 @@ export default function ZoomablePhoto({ uri, isActive }) {
         }}
       >
         <Reanimated.View style={[{ width: '100%', height: '100%' }, imageAnimatedStyle]}>
-          <Image
+          <RNImage
+            key={uri}
             source={{ uri }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-            transition={200}
+            style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+            fadeDuration={120}
+            onLoad={() => {
+              setIsLoaded(true);
+              setLoadError(null);
+            }}
+            onError={(event) => {
+              const nextError = event?.nativeEvent?.error || 'Image failed to load';
+              setLoadError(nextError);
+              if (__DEV__) {
+                console.log(`[viewer] image load failed for ${uri}: ${nextError}`);
+              }
+            }}
           />
         </Reanimated.View>
+        {!isLoaded && !loadError && (
+          <View className="absolute inset-0 items-center justify-center">
+            <ActivityIndicator size="large" color="white" />
+          </View>
+        )}
+        {loadError && (
+          <View className="absolute inset-0 items-center justify-center px-6">
+            <Text className="text-white/80 text-center text-sm">This photo could not be loaded on this page.</Text>
+          </View>
+        )}
       </View>
     </GestureDetector>
   );

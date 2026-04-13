@@ -4,6 +4,7 @@ import { detectFacesInImage } from './face.service.js';
 import { parsePhotoDescription } from '../utils/photoAiParser.js';
 import { logDebug, logError, logWarn } from '../utils/logger.js';
 import { readUploadedFile } from '../utils/uploadStorage.js';
+import { SEARCH_RERANK_ENABLED, SEARCH_RERANK_MAX_CANDIDATES } from '../config/app.config.js';
 
 const EMBEDDING_DIMENSION = 1536;
 
@@ -195,6 +196,7 @@ export const batchProcessPhotos = async (user, supabase, files, deviceAssetIds, 
 };
 
 export const searchPhotos = async (user, supabase, query) => {
+    const start = Date.now();
     const normalizedQuery = query.trim();
 
     const queryEmbedding = await generateEmbedding(normalizedQuery);
@@ -214,18 +216,29 @@ export const searchPhotos = async (user, supabase, query) => {
 
     if (!data || data.length === 0) return { results: [], count: 0 };
 
-    // Fetch faces for matched photos (not in RPC result)
-    const photoIds = data.map(p => p.id);
+    if (!SEARCH_RERANK_ENABLED) {
+        logDebug(`searchPhotos: completed in ${Date.now() - start}ms without rerank`);
+        return { results: data, count: data.length };
+    }
+
+    const rerankCandidates = data.slice(0, SEARCH_RERANK_MAX_CANDIDATES);
+    const photoIds = rerankCandidates.map(p => p.id);
     const { data: facesData } = await supabase
         .from('photo')
         .select('id, faces')
         .in('id', photoIds);
     const facesMap = Object.fromEntries((facesData || []).map(p => [p.id, p.faces]));
-    const dataWithFaces = data.map(p => ({ ...p, faces: facesMap[p.id] || null }));
+    const dataWithFaces = rerankCandidates.map(p => ({ ...p, faces: facesMap[p.id] || null }));
 
     const reranked = await rerankWithGPT(normalizedQuery, dataWithFaces);
+    const remaining = data.slice(rerankCandidates.length);
+    const results = [
+        ...reranked,
+        ...remaining.filter((item) => !reranked.some((ranked) => ranked.id === item.id)),
+    ];
 
-    return { results: reranked, count: reranked.length };
+    logDebug(`searchPhotos: completed in ${Date.now() - start}ms with rerank`);
+    return { results, count: results.length };
 };
 
 export const updatePhotoDescriptions = async ({

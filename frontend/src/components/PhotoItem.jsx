@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 import { View, Dimensions, Pressable, Text } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ function PhotoItem({
   item,
   isSelected = false,
   selectionMode = false,
+  onResolvedUri,
 }) {
   const { isDarkMode } = useThemeContext();
   const size = (windowWidth - 4) / numColumns - 4;
@@ -29,6 +30,11 @@ function PhotoItem({
   const handleLongPress = useCallback(() => {
     if (onLongPress) onLongPress({ item });
   }, [onLongPress, item]);
+
+  useEffect(() => {
+    if (!onResolvedUri || !item?.id || !resolvedUri || item?.uri === resolvedUri) return;
+    onResolvedUri(item.id, resolvedUri);
+  }, [item?.id, item?.uri, onResolvedUri, resolvedUri]);
 
   return (
     <Pressable onPress={handlePress} onLongPress={handleLongPress} delayLongPress={180}>

@@ -24,3 +24,9 @@ export const AI_REQUEST_MAX_RETRIES =
 
 export const AI_RETRY_BASE_DELAY_MS =
   Number(process.env.AI_RETRY_BASE_DELAY_MS || 750);
+
+export const SEARCH_RERANK_ENABLED =
+  String(process.env.SEARCH_RERANK_ENABLED || 'false').toLowerCase() === 'true';
+
+export const SEARCH_RERANK_MAX_CANDIDATES =
+  Number(process.env.SEARCH_RERANK_MAX_CANDIDATES || 8);

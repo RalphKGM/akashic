@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { View, Dimensions, Pressable, Text } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ function PhotoItem({
   onResolvedUri,
 }) {
   const { isDarkMode } = useThemeContext();
+  const itemRef = useRef(null);
   const size = (windowWidth - 4) / numColumns - 4;
   const resolvedUri = useResolvedPhotoUri(item);
 
@@ -28,7 +29,14 @@ function PhotoItem({
   }, [onPress, item]);
 
   const handleLongPress = useCallback(() => {
-    if (onLongPress) onLongPress({ item });
+    if (!onLongPress) return;
+
+    itemRef.current?.measureInWindow?.((x, y, width, height) => {
+      onLongPress({
+        item,
+        frame: { x, y, width, height },
+      });
+    });
   }, [onLongPress, item]);
 
   useEffect(() => {
@@ -39,6 +47,8 @@ function PhotoItem({
   return (
     <Pressable onPress={handlePress} onLongPress={handleLongPress} delayLongPress={180}>
       <View
+        ref={itemRef}
+        collapsable={false}
         className={`m-0.5 overflow-hidden ${isDarkMode ? 'bg-zinc-700' : 'bg-gray-200'}`}
         style={{ width: size, height: size }}
       >

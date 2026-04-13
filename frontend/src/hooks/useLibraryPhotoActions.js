@@ -49,6 +49,12 @@ export const useLibraryPhotoActions = ({
     setSelectedPhotoIds([]);
   }, []);
 
+  const beginSelectionMode = useCallback((photoId) => {
+    if (!photoId) return;
+    setIsSelectionMode(true);
+    setSelectedPhotoIds((prev) => (prev.includes(photoId) ? prev : [photoId]));
+  }, []);
+
   const toggleSelectedPhoto = useCallback((photoId) => {
     setSelectedPhotoIds((prev) => {
       if (prev.includes(photoId)) return prev.filter((id) => id !== photoId);
@@ -73,13 +79,12 @@ export const useLibraryPhotoActions = ({
     ({ item }) => {
       if (!item?.id) return;
       if (!isSelectionMode) {
-        setIsSelectionMode(true);
-        setSelectedPhotoIds([item.id]);
+        beginSelectionMode(item.id);
         return;
       }
       toggleSelectedPhoto(item.id);
     },
-    [isSelectionMode, toggleSelectedPhoto]
+    [beginSelectionMode, isSelectionMode, toggleSelectedPhoto]
   );
 
   const handleDeleteSelectedPhoto = useCallback(async () => {
@@ -106,6 +111,31 @@ export const useLibraryPhotoActions = ({
       setIsDeletingPhoto(false);
     }
   }, [filteredPhotos, isDeletingPhoto, selectedIndex, setFilteredPhotos, setPhotos, sourcePhotos]);
+
+  const handleDeletePhotoById = useCallback(
+    async (photoId) => {
+      if (!photoId) return;
+
+      try {
+        setIsDeletingPhoto(true);
+        await deletePhoto(photoId);
+        setPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
+        if (filteredPhotos) {
+          setFilteredPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
+        }
+        setSelectedPhotoIds((prev) => prev.filter((id) => id !== photoId));
+        await removePhotoFromCache(photoId);
+        setSelectedIndex((prev) => {
+          if (prev === null) return prev;
+          const nextIndex = sourcePhotos.findIndex((photo) => photo.id !== photoId);
+          return nextIndex === -1 ? null : Math.min(prev, nextIndex);
+        });
+      } finally {
+        setIsDeletingPhoto(false);
+      }
+    },
+    [filteredPhotos, setFilteredPhotos, setPhotos, sourcePhotos]
+  );
 
   const handleDeleteSelectedPhotos = useCallback(() => {
     if (selectedCount === 0 || isDeletingSelectedPhotos) return;
@@ -239,9 +269,11 @@ export const useLibraryPhotoActions = ({
     selectedCount,
     isDeletingSelectedPhotos,
     clearSelection,
+    beginSelectionMode,
     handlePressPhoto,
     handleLongPressPhoto,
     handleDeleteSelectedPhoto,
+    handleDeletePhotoById,
     handleDeleteSelectedPhotos,
     handleSaveDescriptions,
     handleUpdatePhotoPreferences,

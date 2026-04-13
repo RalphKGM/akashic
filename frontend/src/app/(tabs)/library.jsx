@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../config/supabase.js';
 import PhotoItem from '../../components/PhotoItem.jsx';
 import PhotoViewer from '../../components/PhotoViewer.jsx';
+import PhotoContextMenu from '../../components/PhotoContextMenu.jsx';
 import { usePhotoContext } from '../../context/PhotoContext';
 import { useThemeContext } from '../../context/ThemeContext.jsx';
 import { getThemeColors } from '../../theme/appColors.js';
@@ -98,6 +99,7 @@ export default function Library() {
   const [activeDateFilter, setActiveDateFilter] = useState('anytime');
   const [openFilterMenu, setOpenFilterMenu] = useState(null);
   const [knownFaces, setKnownFaces] = useState([]);
+  const [contextMenuState, setContextMenuState] = useState(null);
 
   const {
     isSearching,
@@ -138,9 +140,11 @@ export default function Library() {
     selectedCount,
     isDeletingSelectedPhotos,
     clearSelection,
+    beginSelectionMode,
     handlePressPhoto,
     handleLongPressPhoto,
     handleDeleteSelectedPhoto,
+    handleDeletePhotoById,
     handleDeleteSelectedPhotos,
     handleSaveDescriptions,
     handleUpdatePhotoPreferences,
@@ -195,6 +199,10 @@ export default function Library() {
     });
   }, [setFilteredPhotos, setPhotos]);
 
+  const dismissContextMenu = useCallback(() => {
+    setContextMenuState(null);
+  }, []);
+
   // scroll to bottom only when new photos are uploaded (not on initial load)
   const prevPhotoCountRef = useRef(0);
   useEffect(() => {
@@ -239,19 +247,154 @@ export default function Library() {
     };
   }, []);
 
+  const handleUpdatePreferencesFromViewer = useCallback(
+    async (payload) => {
+      const updated = await handleUpdatePhotoPreferences(payload);
+      if (
+        updated &&
+        (!matchesPhotoFilter(updated, activeFilter) || !matchesDateFilter(updated, activeDateFilter))
+      ) {
+        setSelectedIndex(null);
+      }
+      return updated;
+    },
+    [activeDateFilter, activeFilter, handleUpdatePhotoPreferences, setSelectedIndex]
+  );
+
+  useEffect(() => {
+    if (!contextMenuState) return;
+    if (selectedCount > 1 || isSelectionMode) {
+      setContextMenuState(null);
+    }
+  }, [contextMenuState, isSelectionMode, selectedCount]);
+
+  const handleContextAction = useCallback(async (action, item) => {
+    if (!item?.id) return;
+
+    if (action === 'open') {
+      handlePressPhoto({ item });
+      dismissContextMenu();
+      return;
+    }
+
+    if (action === 'select') {
+      beginSelectionMode(item.id);
+      dismissContextMenu();
+      return;
+    }
+
+    if (action === 'delete') {
+      dismissContextMenu();
+      handleDeletePhotoById(item.id).catch((error) => {
+        console.error('Delete error:', error);
+      });
+      return;
+    }
+
+    try {
+      if (action === 'favorite') {
+        await handleUpdatePreferencesFromViewer({
+          photoId: item.id,
+          isFavorite: !item.is_favorite,
+          isArchived: item.is_archived,
+          isHidden: item.is_hidden,
+        });
+      }
+
+      if (action === 'archive') {
+        await handleUpdatePreferencesFromViewer({
+          photoId: item.id,
+          isFavorite: item.is_favorite,
+          isArchived: !item.is_archived,
+          isHidden: item.is_hidden,
+        });
+      }
+
+      if (action === 'hide') {
+        await handleUpdatePreferencesFromViewer({
+          photoId: item.id,
+          isFavorite: item.is_favorite,
+          isArchived: item.is_archived,
+          isHidden: !item.is_hidden,
+        });
+      }
+    } finally {
+      dismissContextMenu();
+    }
+  }, [
+    beginSelectionMode,
+    dismissContextMenu,
+    handleDeletePhotoById,
+    handlePressPhoto,
+    handleUpdatePreferencesFromViewer,
+  ]);
+
+  const contextMenuActions = useMemo(() => {
+    if (!contextMenuState?.item) return [];
+
+    const item = contextMenuState.item;
+
+    return [
+      {
+        key: 'open',
+        icon: 'scan-outline',
+        label: 'Open photo',
+        onPress: () => handleContextAction('open', item),
+      },
+      {
+        key: 'favorite',
+        icon: item.is_favorite ? 'heart-dislike-outline' : 'heart-outline',
+        label: item.is_favorite ? 'Remove favorite' : 'Add to favorites',
+        onPress: () => handleContextAction('favorite', item),
+      },
+      {
+        key: 'archive',
+        icon: item.is_archived ? 'archive-outline' : 'archive-outline',
+        label: item.is_archived ? 'Return to library' : 'Archive from library',
+        onPress: () => handleContextAction('archive', item),
+      },
+      {
+        key: 'hide',
+        icon: item.is_hidden ? 'eye-outline' : 'eye-off-outline',
+        label: item.is_hidden ? 'Unhide everywhere' : 'Hide from browsing',
+        onPress: () => handleContextAction('hide', item),
+      },
+      {
+        key: 'select',
+        icon: 'checkmark-circle-outline',
+        label: 'Select multiple',
+        onPress: () => handleContextAction('select', item),
+      },
+      {
+        key: 'delete',
+        icon: 'trash-outline',
+        label: 'Delete photo',
+        destructive: true,
+        onPress: () => handleContextAction('delete', item),
+      },
+    ];
+  }, [contextMenuState, handleContextAction]);
+
   const renderPhotoItem = useCallback(
     ({ item }) => (
       <PhotoItem
         numColumns={numColumns}
         onPress={handlePressPhoto}
-        onLongPress={handleLongPressPhoto}
+        onLongPress={({ item: pressedItem, frame }) => {
+          if (isSelectionMode) {
+            handleLongPressPhoto({ item: pressedItem });
+            return;
+          }
+
+          setContextMenuState({ item: pressedItem, frame });
+        }}
         item={item}
         isSelected={selectedPhotoIds.includes(item.id)}
         selectionMode={isSelectionMode}
         onResolvedUri={handlePhotoResolvedUri}
       />
     ),
-    [handlePhotoResolvedUri, handlePressPhoto, handleLongPressPhoto, selectedPhotoIds, isSelectionMode]
+    [handleLongPressPhoto, handlePhotoResolvedUri, handlePressPhoto, isSelectionMode, selectedPhotoIds]
   );
 
   const uploadPct = uploadProgress
@@ -268,20 +411,6 @@ export default function Library() {
   const bannerSpinnerColor = isDarkMode ? '#A1A1AA' : '#52525B';
   const bannerTextColor = isDarkMode ? '#E4E4E7' : '#52525B';
   const bannerSubTextColor = isDarkMode ? '#71717A' : '#737373';
-
-  const handleUpdatePreferencesFromViewer = useCallback(
-    async (payload) => {
-      const updated = await handleUpdatePhotoPreferences(payload);
-      if (
-        updated &&
-        (!matchesPhotoFilter(updated, activeFilter) || !matchesDateFilter(updated, activeDateFilter))
-      ) {
-        setSelectedIndex(null);
-      }
-      return updated;
-    },
-    [activeDateFilter, activeFilter, handleUpdatePhotoPreferences, setSelectedIndex]
-  );
 
   return (
     <View className={`flex-1 ${colors.pageBg}`}>
@@ -562,6 +691,13 @@ export default function Library() {
         onSaveDescriptions={handleSaveDescriptions}
         onUpdatePreferences={handleUpdatePreferencesFromViewer}
         isDeleting={isDeletingPhoto}
+      />
+      <PhotoContextMenu
+        visible={Boolean(contextMenuState)}
+        anchorRect={contextMenuState?.frame}
+        isDarkMode={isDarkMode}
+        actions={contextMenuActions}
+        onClose={dismissContextMenu}
       />
     </View>
   );

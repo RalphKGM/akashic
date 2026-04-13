@@ -527,47 +527,6 @@ export default function PhotoViewer({
                   </>
                 )}
 
-                {onUpdatePreferences && (
-                  <View className="mb-5">
-                    <Text className={`text-xs font-semibold uppercase tracking-wider mb-2 ${colors.title}`}>Actions</Text>
-                    <View className="flex-row flex-wrap gap-2">
-                      <Pressable
-                        onPress={() => handlePreferenceUpdate({ is_favorite: !isFavorite }, 'favorite')}
-                        disabled={Boolean(updatingPreferenceKey)}
-                        className={`px-3 py-2 rounded-full ${colors.tagBg}`}
-                        style={{ opacity: updatingPreferenceKey ? 0.5 : 1 }}
-                      >
-                        <Text className={`${colors.tagText} text-sm`}>
-                          {isFavorite ? 'Remove favorite' : 'Add to favorites'}
-                        </Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => handlePreferenceUpdate({ is_archived: !isArchived }, 'archived')}
-                        disabled={Boolean(updatingPreferenceKey)}
-                        className={`px-3 py-2 rounded-full ${colors.tagBg}`}
-                        style={{ opacity: updatingPreferenceKey ? 0.5 : 1 }}
-                      >
-                        <Text className={`${colors.tagText} text-sm`}>
-                          {isArchived ? 'Return to library' : 'Archive from library'}
-                        </Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => handlePreferenceUpdate({ is_hidden: !isHidden }, 'hidden')}
-                        disabled={Boolean(updatingPreferenceKey)}
-                        className={`px-3 py-2 rounded-full ${colors.tagBg}`}
-                        style={{ opacity: updatingPreferenceKey ? 0.5 : 1 }}
-                      >
-                        <Text className={`${colors.tagText} text-sm`}>
-                          {isHidden ? 'Unhide everywhere' : 'Hide from browsing'}
-                        </Text>
-                      </Pressable>
-                    </View>
-                    <Text className={`mt-2 text-xs ${colors.textSecondary}`}>
-                      Archived photos stay saved but leave the main Library. Hidden photos are kept but removed from normal browsing views.
-                    </Text>
-                  </View>
-                )}
-
                 {tags.length > 0 && (
                   <View className="mb-4">
                     <Text className={`text-xs font-semibold uppercase tracking-wider mb-2 ${colors.title}`}>Tags</Text>

@@ -30,3 +30,6 @@ export const SEARCH_RERANK_ENABLED =
 
 export const SEARCH_RERANK_MAX_CANDIDATES =
   Number(process.env.SEARCH_RERANK_MAX_CANDIDATES || 8);
+
+export const FACE_RECOGNITION_TIMEOUT_MS =
+  Number(process.env.FACE_RECOGNITION_TIMEOUT_MS || 1200);

@@ -22,6 +22,7 @@ export default function Albums() {
   const { photos, setPhotos } = usePhotoContext();
   const { isDarkMode } = useThemeContext();
   const colors = getThemeColors(isDarkMode);
+  const albumCardGap = 12;
   const activePhotos = useMemo(
     () => photos.filter((photo) => !photo?.is_hidden && !photo?.is_archived),
     [photos]
@@ -70,6 +71,7 @@ export default function Albums() {
     handleRenameAlbum,
     handleDeleteAlbum,
   } = useAlbums({ photos: activePhotos, setPhotos });
+  const albumCardSize = Math.floor((screenWidth - 32 - albumCardGap) / 2);
 
   const categoryAlbums = useMemo(() => {
     const grouped = {};
@@ -100,27 +102,30 @@ export default function Albums() {
   const renderAlbumPage = useCallback(
     ({ item: page }) => (
       <View className="w-screen px-4 pt-5 pb-3">
-        <View className={`flex-row justify-between ${page.length > 2 ? 'mb-3' : ''}`}>
+        <View
+          className={page.length > 2 ? 'mb-3 flex-row justify-between' : 'flex-row justify-between'}
+          style={{ columnGap: albumCardGap }}
+        >
           {page.slice(0, 2).map((album) => (
-            <View key={album.id} className="w-[180px]">
-              <AlbumCard album={album} onPress={handleOpenAlbum} isDarkMode={isDarkMode} />
+            <View key={album.id} style={{ width: albumCardSize }}>
+              <AlbumCard album={album} onPress={handleOpenAlbum} isDarkMode={isDarkMode} size={albumCardSize} />
             </View>
           ))}
-          {page.length === 1 && <View className="w-[180px]" />}
+          {page.length === 1 && <View style={{ width: albumCardSize }} />}
         </View>
         {page.length > 2 && (
-          <View className="flex-row justify-between">
+          <View className="flex-row justify-between" style={{ columnGap: albumCardGap }}>
             {page.slice(2, 4).map((album) => (
-              <View key={album.id} className="w-[180px]">
-                <AlbumCard album={album} onPress={handleOpenAlbum} isDarkMode={isDarkMode} />
+              <View key={album.id} style={{ width: albumCardSize }}>
+                <AlbumCard album={album} onPress={handleOpenAlbum} isDarkMode={isDarkMode} size={albumCardSize} />
               </View>
             ))}
-            {page.length === 3 && <View className="w-[180px]" />}
+            {page.length === 3 && <View style={{ width: albumCardSize }} />}
           </View>
         )}
       </View>
     ),
-    [handleOpenAlbum, isDarkMode]
+    [albumCardGap, albumCardSize, handleOpenAlbum, isDarkMode]
   );
 
   const renderCreatePhotoItem = useCallback(
@@ -189,6 +194,8 @@ export default function Albums() {
               colors={colors}
               screenWidth={screenWidth}
               onPageChange={setCurrentAlbumPage}
+              cardSize={albumCardSize}
+              cardGap={albumCardGap}
             />
           )}
 
@@ -210,19 +217,20 @@ export default function Albums() {
                   <View
                     key={i}
                     className="flex-row justify-between"
-                    style={{ marginBottom: i < categoryAlbumRows.length - 1 ? 12 : 0 }}
+                    style={{ marginBottom: i < categoryAlbumRows.length - 1 ? 12 : 0, columnGap: albumCardGap }}
                   >
                     {row.map((album) => (
-                      <View key={album.id} className="w-[180px]">
+                      <View key={album.id} style={{ width: albumCardSize }}>
                         <AlbumCard
                           album={album}
                           onPress={handleOpenAlbum}
                           isDarkMode={isDarkMode}
+                          size={albumCardSize}
                         />
                       </View>
                     ))}
                     {/* Keep right side aligned when only 1 in row */}
-                    {row.length === 1 && <View className="w-[180px]" />}
+                    {row.length === 1 && <View style={{ width: albumCardSize }} />}
                   </View>
                 ))}
               </View>

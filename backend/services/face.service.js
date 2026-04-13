@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 import canvas from 'canvas';
@@ -24,11 +25,23 @@ const normalizeImageBuffer = async (buffer) => {
     return await convertHeicImage(buffer);
 };
 
+const assertValidModelFile = async (filename) => {
+    const modelPath = path.join(MODELS_DIR, filename);
+    const file = await fs.readFile(modelPath);
+    const prefix = file.subarray(0, 32).toString('utf8').trim();
+
+    if (!file.length || prefix.startsWith('404:')) {
+        throw new Error(`Face model asset "${filename}" is invalid. Re-download the backend/models/face files.`);
+    }
+};
+
 const initFaceApi = async () => {
     if (modelsLoaded) return;
 
     const { Canvas, Image, ImageData } = canvas;
     faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+
+    await assertValidModelFile('face_landmark_68_model.bin');
 
     await Promise.all([
         faceapi.nets.ssdMobilenetv1.loadFromDisk(MODELS_DIR),
@@ -77,9 +90,17 @@ export const detectFacesInImage = async (imageBuffer, knownFaces) => {
         logDebug(`[detectFaces] faces detected in image: ${detections?.length ?? 0}`);
         if (!detections?.length) return null;
 
-        const labeled = knownFaces.map(f =>
-            new faceapi.LabeledFaceDescriptors(f.name, [new Float32Array(f.descriptor.map(Number))])
-        );
+        const labeled = knownFaces
+            .filter((face) => Array.isArray(face?.descriptor) && face.descriptor.length === 128)
+            .map((face) =>
+                new faceapi.LabeledFaceDescriptors(face.name, [new Float32Array(face.descriptor.map(Number))])
+            );
+
+        if (labeled.length === 0) {
+            logDebug('[detectFaces] no valid face descriptors found');
+            return null;
+        }
+
         const matcher = new faceapi.FaceMatcher(labeled, 0.45);
 
         const names = new Set();

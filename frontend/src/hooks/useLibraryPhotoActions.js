@@ -24,6 +24,26 @@ export const useLibraryPhotoActions = ({
     [sourcePhotos]
   );
 
+  const patchPhotoCollections = useCallback((photoId, patch) => {
+    let nextPhoto = null;
+
+    setPhotos((prev) =>
+      prev.map((photo) => {
+        if (photo.id !== photoId) return photo;
+        nextPhoto = { ...photo, ...patch };
+        return nextPhoto;
+      })
+    );
+
+    if (filteredPhotos) {
+      setFilteredPhotos((prev) =>
+        prev.map((photo) => (photo.id === photoId ? { ...photo, ...patch } : photo))
+      );
+    }
+
+    return nextPhoto;
+  }, [filteredPhotos, setFilteredPhotos, setPhotos]);
+
   const clearSelection = useCallback(() => {
     setIsSelectionMode(false);
     setSelectedPhotoIds([]);
@@ -171,27 +191,41 @@ export const useLibraryPhotoActions = ({
     async ({ photoId, isFavorite, isArchived, isHidden }) => {
       if (!photoId) throw new Error('Photo ID is required');
 
-      const updated = await updatePhotoPreferences({
-        photoId,
-        isFavorite,
-        isArchived,
-        isHidden,
-      });
+      const currentPhoto =
+        sourcePhotos.find((photo) => photo.id === photoId) ||
+        photos.find((photo) => photo.id === photoId) ||
+        filteredPhotos?.find((photo) => photo.id === photoId);
 
-      setPhotos((prev) =>
-        prev.map((photo) => (photo.id === photoId ? { ...photo, ...updated } : photo))
-      );
-
-      if (filteredPhotos) {
-        setFilteredPhotos((prev) =>
-          prev.map((photo) => (photo.id === photoId ? { ...photo, ...updated } : photo))
-        );
+      if (!currentPhoto) {
+        throw new Error('Photo not found');
       }
 
-      await addPhotoToCache(updated);
-      return updated;
+      const optimisticPatch = {
+        is_favorite: typeof isFavorite === 'boolean' ? isFavorite : currentPhoto.is_favorite,
+        is_archived: typeof isArchived === 'boolean' ? isArchived : currentPhoto.is_archived,
+        is_hidden: typeof isHidden === 'boolean' ? isHidden : currentPhoto.is_hidden,
+        updated_at: new Date().toISOString(),
+      };
+
+      patchPhotoCollections(photoId, optimisticPatch);
+
+      try {
+        const updated = await updatePhotoPreferences({
+          photoId,
+          isFavorite,
+          isArchived,
+          isHidden,
+        });
+
+        patchPhotoCollections(photoId, updated);
+        await addPhotoToCache(updated);
+        return updated;
+      } catch (error) {
+        patchPhotoCollections(photoId, currentPhoto);
+        throw error;
+      }
     },
-    [filteredPhotos, setFilteredPhotos, setPhotos]
+    [filteredPhotos, patchPhotoCollections, photos, sourcePhotos]
   );
 
   return {

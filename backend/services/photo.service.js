@@ -4,9 +4,31 @@ import { detectFacesInImage } from './face.service.js';
 import { parsePhotoDescription } from '../utils/photoAiParser.js';
 import { logDebug, logError, logWarn } from '../utils/logger.js';
 import { readUploadedFile } from '../utils/uploadStorage.js';
-import { SEARCH_RERANK_ENABLED, SEARCH_RERANK_MAX_CANDIDATES } from '../config/app.config.js';
+import {
+    FACE_RECOGNITION_TIMEOUT_MS,
+    SEARCH_RERANK_ENABLED,
+    SEARCH_RERANK_MAX_CANDIDATES,
+} from '../config/app.config.js';
 
 const EMBEDDING_DIMENSION = 1536;
+
+const withTimeout = async (promise, ms, fallbackValue = null, label = 'operation') => {
+    let timer;
+
+    try {
+        return await Promise.race([
+            promise,
+            new Promise((resolve) => {
+                timer = setTimeout(() => {
+                    logWarn(`${label} timed out after ${ms}ms`);
+                    resolve(fallbackValue);
+                }, ms);
+            }),
+        ]);
+    } finally {
+        clearTimeout(timer);
+    }
+};
 
 const rerankWithGPT = async(query, candidates) => {
     if (!candidates || candidates.length === 0) return [];
@@ -121,7 +143,12 @@ export const processPhoto = async (user, supabase, image, device_asset_id) => {
     const [description, faces] = await Promise.all([
         describeImage(compressedImage),
         knownFaces?.length > 0
-            ? detectFacesInImage(image, knownFaces)
+            ? withTimeout(
+                detectFacesInImage(compressedImage, knownFaces),
+                FACE_RECOGNITION_TIMEOUT_MS,
+                null,
+                'detectFacesInImage'
+            )
             : Promise.resolve(null),
     ]);
 

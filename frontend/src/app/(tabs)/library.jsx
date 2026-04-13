@@ -23,8 +23,20 @@ import { useLibraryPhotoActions } from '../../hooks/useLibraryPhotoActions.js';
 import { getKnownFaces } from '../../service/faceService.js';
 
 const numColumns = 4;
-const FILTERS = ['library', 'favorites', 'archived', 'hidden', 'all'];
-const DATE_FILTERS = ['anytime', 'today', 'week', 'month', 'year'];
+const FILTER_OPTIONS = [
+  { value: 'library', label: 'Library', hint: 'Default view' },
+  { value: 'favorites', label: 'Favorites', hint: 'Only hearted photos' },
+  { value: 'archived', label: 'Archived', hint: 'Hidden from Library, still saved' },
+  { value: 'hidden', label: 'Hidden', hint: 'Private from normal browsing' },
+  { value: 'all', label: 'All', hint: 'Every photo, including archived and hidden' },
+];
+const DATE_FILTER_OPTIONS = [
+  { value: 'anytime', label: 'Anytime' },
+  { value: 'today', label: 'Today' },
+  { value: 'week', label: 'This week' },
+  { value: 'month', label: 'This month' },
+  { value: 'year', label: 'This year' },
+];
 
 const matchesPhotoFilter = (photo, filter) => {
   if (!photo) return false;
@@ -84,6 +96,7 @@ export default function Library() {
   const flatListRef = useRef(null);
   const [activeFilter, setActiveFilter] = useState('library');
   const [activeDateFilter, setActiveDateFilter] = useState('anytime');
+  const [openFilterMenu, setOpenFilterMenu] = useState(null);
   const [knownFaces, setKnownFaces] = useState([]);
 
   const {
@@ -246,6 +259,9 @@ export default function Library() {
     : 0;
 
   const colors = getThemeColors(isDarkMode);
+  const activeFilterOption = FILTER_OPTIONS.find((option) => option.value === activeFilter) ?? FILTER_OPTIONS[0];
+  const activeDateOption =
+    DATE_FILTER_OPTIONS.find((option) => option.value === activeDateFilter) ?? DATE_FILTER_OPTIONS[0];
 
   const bannerBg = isDarkMode ? '#1C1C1E' : '#F5F5F5';
   const bannerTrackBg = isDarkMode ? '#3A3A3C' : '#D4D4D8';
@@ -345,50 +361,87 @@ export default function Library() {
             <Text className={`text-xs mt-0.5 ${colors.count}`}>
               {displayPhotos.length} {displayPhotos.length === 1 ? 'photo' : 'photos'}
             </Text>
-            <View className="flex-row flex-wrap gap-2 mt-3">
-              {FILTERS.map((filter) => {
-                const isActive = activeFilter === filter;
-                return (
-                  <Pressable
-                    key={filter}
-                    onPress={() => setActiveFilter(filter)}
-                    className={`px-3 py-1.5 rounded-full ${
-                      isActive ? 'bg-black' : isDarkMode ? 'bg-zinc-700' : 'bg-gray-100'
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-semibold ${
-                        isActive ? 'text-white' : colors.textSecondary
-                      }`}
-                    >
-                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+            <View className="flex-row gap-2 mt-3">
+              <Pressable
+                onPress={() => setOpenFilterMenu((prev) => (prev === 'status' ? null : 'status'))}
+                className={`flex-1 flex-row items-center justify-between rounded-xl px-3 py-2 ${
+                  isDarkMode ? 'bg-zinc-700' : 'bg-gray-100'
+                }`}
+              >
+                <View className="flex-row items-center">
+                  <Ionicons name="options-outline" size={16} color={colors.icon} />
+                  <Text className={`ml-2 text-sm font-semibold ${colors.title}`}>{activeFilterOption.label}</Text>
+                </View>
+                <Ionicons
+                  name={openFilterMenu === 'status' ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={colors.icon}
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => setOpenFilterMenu((prev) => (prev === 'date' ? null : 'date'))}
+                className={`flex-1 flex-row items-center justify-between rounded-xl px-3 py-2 ${
+                  isDarkMode ? 'bg-zinc-800 border border-zinc-700' : 'bg-white border border-gray-200'
+                }`}
+              >
+                <View className="flex-row items-center">
+                  <Ionicons name="time-outline" size={16} color={colors.icon} />
+                  <Text className={`ml-2 text-sm font-semibold ${colors.title}`}>{activeDateOption.label}</Text>
+                </View>
+                <Ionicons
+                  name={openFilterMenu === 'date' ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={colors.icon}
+                />
+              </Pressable>
             </View>
-            <View className="flex-row flex-wrap gap-2 mt-2">
-              {DATE_FILTERS.map((filter) => {
-                const isActive = activeDateFilter === filter;
-                return (
-                  <Pressable
-                    key={filter}
-                    onPress={() => setActiveDateFilter(filter)}
-                    className={`px-3 py-1.5 rounded-full border ${
-                      isActive ? 'border-black bg-black' : isDarkMode ? 'border-zinc-700 bg-zinc-800' : 'border-gray-200 bg-white'
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-semibold ${
-                        isActive ? 'text-white' : colors.textSecondary
-                      }`}
+            {openFilterMenu === 'status' && (
+              <View className={`mt-2 rounded-2xl border px-2 py-2 ${isDarkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-gray-200'}`}>
+                {FILTER_OPTIONS.map((option) => {
+                  const isActive = activeFilter === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => {
+                        setActiveFilter(option.value);
+                        setOpenFilterMenu(null);
+                      }}
+                      className={`rounded-xl px-3 py-3 ${isActive ? (isDarkMode ? 'bg-zinc-700' : 'bg-gray-100') : ''}`}
                     >
-                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                      <View className="flex-row items-center justify-between">
+                        <View className="flex-1 pr-3">
+                          <Text className={`text-sm font-semibold ${colors.title}`}>{option.label}</Text>
+                          <Text className={`text-xs mt-0.5 ${colors.textSecondary}`}>{option.hint}</Text>
+                        </View>
+                        {isActive && <Ionicons name="checkmark" size={18} color={colors.icon} />}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+            {openFilterMenu === 'date' && (
+              <View className={`mt-2 rounded-2xl border px-2 py-2 ${isDarkMode ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-gray-200'}`}>
+                {DATE_FILTER_OPTIONS.map((option) => {
+                  const isActive = activeDateFilter === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => {
+                        setActiveDateFilter(option.value);
+                        setOpenFilterMenu(null);
+                      }}
+                      className={`rounded-xl px-3 py-3 ${isActive ? (isDarkMode ? 'bg-zinc-700' : 'bg-gray-100') : ''}`}
+                    >
+                      <View className="flex-row items-center justify-between">
+                        <Text className={`text-sm font-semibold ${colors.title}`}>{option.label}</Text>
+                        {isActive && <Ionicons name="checkmark" size={18} color={colors.icon} />}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
             {knownFaces.length > 0 && (
               <View className="mt-3">
                 <Text className={`text-xs mb-2 ${colors.count}`}>People</Text>

@@ -486,7 +486,7 @@ export default function PhotoViewer({
                         style={{ opacity: updatingPreferenceKey ? 0.5 : 1 }}
                       >
                         <Text className={`${colors.tagText} text-sm`}>
-                          {isFavorite ? 'Remove favorite' : 'Add favorite'}
+                          {isFavorite ? 'Remove favorite' : 'Add to favorites'}
                         </Text>
                       </Pressable>
                       <Pressable
@@ -496,7 +496,7 @@ export default function PhotoViewer({
                         style={{ opacity: updatingPreferenceKey ? 0.5 : 1 }}
                       >
                         <Text className={`${colors.tagText} text-sm`}>
-                          {isArchived ? 'Unarchive' : 'Archive'}
+                          {isArchived ? 'Return to library' : 'Archive from library'}
                         </Text>
                       </Pressable>
                       <Pressable
@@ -506,10 +506,13 @@ export default function PhotoViewer({
                         style={{ opacity: updatingPreferenceKey ? 0.5 : 1 }}
                       >
                         <Text className={`${colors.tagText} text-sm`}>
-                          {isHidden ? 'Unhide' : 'Hide'}
+                          {isHidden ? 'Unhide everywhere' : 'Hide from browsing'}
                         </Text>
                       </Pressable>
                     </View>
+                    <Text className={`mt-2 text-xs ${colors.textSecondary}`}>
+                      Archived photos stay saved but leave the main Library. Hidden photos are kept but removed from normal browsing views.
+                    </Text>
                   </View>
                 )}
 

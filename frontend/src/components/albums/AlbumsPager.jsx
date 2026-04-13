@@ -7,10 +7,13 @@ export default function AlbumsPager({
   colors,
   screenWidth,
   onPageChange,
+  cardSize,
+  cardGap = 12,
 }) {
   const hasTwoRows = albumPages.some((page) => page.length > 2);
-  // 1 row height ~= 180 (card) + 2 lines text + margins + page padding.
-  const pagerHeight = hasTwoRows ? 468 : 246;
+  const pagerHeight = hasTwoRows
+    ? cardSize * 2 + cardGap + 98
+    : cardSize + 74;
 
   return (
     <View>

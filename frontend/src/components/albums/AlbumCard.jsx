@@ -7,7 +7,7 @@ import { useResolvedPhotoUri } from '../../hooks/useResolvedPhotoUri.js';
 
 export const ALBUM_CARD_SIZE = 180;
 
-export default function AlbumCard({ album, onPress, isDarkMode = false }) {
+export default function AlbumCard({ album, onPress, isDarkMode = false, size = ALBUM_CARD_SIZE }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const colors = getThemeColors(isDarkMode);
   const coverPhoto =
@@ -27,14 +27,17 @@ export default function AlbumCard({ album, onPress, isDarkMode = false }) {
       onPress={() => onPress(album)}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      className="w-[180px]"
+      style={{ width: size }}
     >
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <View className={`w-[180px] h-[180px] rounded-xl overflow-hidden ${colors.placeholderBg}`}>
+        <View
+          className={`rounded-xl overflow-hidden ${colors.placeholderBg}`}
+          style={{ width: size, height: size }}
+        >
           {coverUri ? (
             <Image
               source={{ uri: coverUri }}
-              style={{ width: 180, height: 180 }}  // ← explicit style, not className
+              style={{ width: size, height: size }}
               contentFit="cover"
               cachePolicy="memory-disk"
               transition={150}

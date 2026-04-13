@@ -27,9 +27,8 @@ const numColumns = 4;
 const FILTER_OPTIONS = [
   { value: 'library', label: 'Library', hint: 'Default view' },
   { value: 'favorites', label: 'Favorites', hint: 'Only hearted photos' },
-  { value: 'archived', label: 'Archived', hint: 'Hidden from Library, still saved' },
   { value: 'hidden', label: 'Hidden', hint: 'Private from normal browsing' },
-  { value: 'all', label: 'All', hint: 'Every photo, including archived and hidden' },
+  { value: 'all', label: 'All', hint: 'Every photo, including hidden' },
 ];
 const DATE_FILTER_OPTIONS = [
   { value: 'anytime', label: 'Anytime' },
@@ -45,15 +44,13 @@ const matchesPhotoFilter = (photo, filter) => {
   switch (filter) {
     case 'favorites':
       return Boolean(photo.is_favorite) && !photo.is_hidden;
-    case 'archived':
-      return Boolean(photo.is_archived) && !photo.is_hidden;
     case 'hidden':
       return Boolean(photo.is_hidden);
     case 'all':
       return true;
     case 'library':
     default:
-      return !photo.is_archived && !photo.is_hidden;
+      return !photo.is_hidden;
   }
 };
 
@@ -137,6 +134,7 @@ export default function Library() {
     isDeletingPhoto,
     isSelectionMode,
     selectedPhotoIds,
+    selectedPhotos,
     selectedCount,
     isDeletingSelectedPhotos,
     clearSelection,
@@ -148,6 +146,7 @@ export default function Library() {
     handleDeleteSelectedPhotos,
     handleSaveDescriptions,
     handleUpdatePhotoPreferences,
+    handleUpdateSelectedPhotos,
   } = useLibraryPhotoActions({
     photos,
     filteredPhotos,
@@ -296,16 +295,6 @@ export default function Library() {
         await handleUpdatePreferencesFromViewer({
           photoId: item.id,
           isFavorite: !item.is_favorite,
-          isArchived: item.is_archived,
-          isHidden: item.is_hidden,
-        });
-      }
-
-      if (action === 'archive') {
-        await handleUpdatePreferencesFromViewer({
-          photoId: item.id,
-          isFavorite: item.is_favorite,
-          isArchived: !item.is_archived,
           isHidden: item.is_hidden,
         });
       }
@@ -314,7 +303,6 @@ export default function Library() {
         await handleUpdatePreferencesFromViewer({
           photoId: item.id,
           isFavorite: item.is_favorite,
-          isArchived: item.is_archived,
           isHidden: !item.is_hidden,
         });
       }
@@ -346,12 +334,6 @@ export default function Library() {
         icon: item.is_favorite ? 'heart-dislike-outline' : 'heart-outline',
         label: item.is_favorite ? 'Remove favorite' : 'Add to favorites',
         onPress: () => handleContextAction('favorite', item),
-      },
-      {
-        key: 'archive',
-        icon: item.is_archived ? 'archive-outline' : 'archive-outline',
-        label: item.is_archived ? 'Return to library' : 'Archive from library',
-        onPress: () => handleContextAction('archive', item),
       },
       {
         key: 'hide',
@@ -411,6 +393,10 @@ export default function Library() {
   const bannerSpinnerColor = isDarkMode ? '#A1A1AA' : '#52525B';
   const bannerTextColor = isDarkMode ? '#E4E4E7' : '#52525B';
   const bannerSubTextColor = isDarkMode ? '#71717A' : '#737373';
+  const allSelectedFavorited =
+    selectedPhotos.length > 0 && selectedPhotos.every((photo) => photo.is_favorite);
+  const allSelectedHidden =
+    selectedPhotos.length > 0 && selectedPhotos.every((photo) => photo.is_hidden);
 
   return (
     <View className={`flex-1 ${colors.pageBg}`}>
@@ -420,21 +406,63 @@ export default function Library() {
             <Pressable onPress={clearSelection} className="py-1 pr-3">
               <Text className={`text-base ${colors.title}`}>Cancel</Text>
             </Pressable>
-            <Text className={`text-lg font-semibold ${colors.title}`}>
-              {selectedCount} selected
-            </Text>
-            <Pressable
-              onPress={handleDeleteSelectedPhotos}
-              disabled={selectedCount === 0 || isDeletingSelectedPhotos}
-              className="py-1 pl-3"
-              style={{ opacity: selectedCount === 0 || isDeletingSelectedPhotos ? 0.4 : 1 }}
-            >
-              {isDeletingSelectedPhotos ? (
-                <ActivityIndicator size="small" color="#EF4444" />
-              ) : (
-                <Text className="text-base font-semibold text-red-500">Delete</Text>
-              )}
-            </Pressable>
+            <View className="items-center">
+              <Text className={`text-lg font-semibold ${colors.title}`}>
+                {selectedCount} selected
+              </Text>
+              <Text className={`text-xs ${colors.count}`}>Bulk actions</Text>
+            </View>
+            <View className="flex-row items-center gap-3">
+              <Pressable
+                onPress={async () => {
+                  try {
+                    await handleUpdateSelectedPhotos({ isFavorite: !allSelectedFavorited });
+                  } catch (error) {
+                    console.error('Favorite selected error:', error);
+                  }
+                }}
+                disabled={selectedCount === 0 || isDeletingSelectedPhotos}
+                className="p-1"
+                style={{ opacity: selectedCount === 0 || isDeletingSelectedPhotos ? 0.4 : 1 }}
+              >
+                <Ionicons
+                  name={allSelectedFavorited ? 'heart-dislike-outline' : 'heart-outline'}
+                  size={22}
+                  color={allSelectedFavorited ? '#F87171' : colors.icon}
+                />
+              </Pressable>
+              <Pressable
+                onPress={async () => {
+                  try {
+                    await handleUpdateSelectedPhotos({ isHidden: !allSelectedHidden });
+                    clearSelection();
+                  } catch (error) {
+                    console.error('Hide selected error:', error);
+                  }
+                }}
+                disabled={selectedCount === 0 || isDeletingSelectedPhotos}
+                className="p-1"
+                style={{ opacity: selectedCount === 0 || isDeletingSelectedPhotos ? 0.4 : 1 }}
+              >
+                <Ionicons
+                  name={allSelectedHidden ? 'eye-outline' : 'eye-off-outline'}
+                  size={22}
+                  color={colors.icon}
+                />
+              </Pressable>
+              <Pressable
+                onPress={handleDeleteSelectedPhotos}
+                disabled={selectedCount === 0 || isDeletingSelectedPhotos}
+                className="p-1"
+                style={{ opacity: selectedCount === 0 || isDeletingSelectedPhotos ? 0.4 : 1 }}
+              >
+                {isDeletingSelectedPhotos ? (
+                  <ActivityIndicator size="small" color="#EF4444" />
+                ) : (
+                  <Ionicons name="trash-outline" size={22} color="#EF4444" />
+                )}
+              </Pressable>
+            </View>
           </View>
         ) : (
           <View className="flex-row items-center justify-between">

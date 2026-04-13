@@ -24,7 +24,7 @@ export default function Albums() {
   const colors = getThemeColors(isDarkMode);
   const albumCardGap = 12;
   const activePhotos = useMemo(
-    () => photos.filter((photo) => !photo?.is_hidden && !photo?.is_archived),
+    () => photos.filter((photo) => !photo?.is_hidden),
     [photos]
   );
   const {

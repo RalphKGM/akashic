@@ -77,7 +77,8 @@ export default function PhotoContextMenu({
     [isDarkMode]
   );
 
-  const position = getMenuPosition(anchorRect, actions.length);
+  const safeActions = actions || [];
+  const position = getMenuPosition(anchorRect, safeActions.length);
 
   useEffect(() => {
     if (visible) {
@@ -160,14 +161,14 @@ export default function PhotoContextMenu({
               borderColor: palette.border,
             }}
           >
-            {actions.map((action, index) => (
+            {safeActions.map((action, index) => (
               <MenuRow
                 key={action.key}
                 icon={action.icon}
                 label={action.label}
                 destructive={action.destructive}
                 onPress={action.onPress}
-                divider={index < actions.length - 1}
+                divider={index < safeActions.length - 1}
                 tintColor={palette.icon}
                 textColor={palette.text}
                 dividerColor={palette.divider}

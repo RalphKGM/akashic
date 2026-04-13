@@ -19,6 +19,10 @@ export const useLibraryPhotoActions = ({
 
   const sourcePhotos = displayFilteredPhotos ?? displayPhotos ?? photos;
   const selectedCount = selectedPhotoIds.length;
+  const selectedPhotos = useMemo(
+    () => photos.filter((photo) => selectedPhotoIds.includes(photo.id)),
+    [photos, selectedPhotoIds]
+  );
   const viewerPhotos = useMemo(
     () => sourcePhotos.map((photo) => ({ item: photo })),
     [sourcePhotos]
@@ -218,7 +222,7 @@ export const useLibraryPhotoActions = ({
   );
 
   const handleUpdatePhotoPreferences = useCallback(
-    async ({ photoId, isFavorite, isArchived, isHidden }) => {
+    async ({ photoId, isFavorite, isHidden }) => {
       if (!photoId) throw new Error('Photo ID is required');
 
       const currentPhoto =
@@ -232,7 +236,6 @@ export const useLibraryPhotoActions = ({
 
       const optimisticPatch = {
         is_favorite: typeof isFavorite === 'boolean' ? isFavorite : currentPhoto.is_favorite,
-        is_archived: typeof isArchived === 'boolean' ? isArchived : currentPhoto.is_archived,
         is_hidden: typeof isHidden === 'boolean' ? isHidden : currentPhoto.is_hidden,
         updated_at: new Date().toISOString(),
       };
@@ -243,7 +246,6 @@ export const useLibraryPhotoActions = ({
         const updated = await updatePhotoPreferences({
           photoId,
           isFavorite,
-          isArchived,
           isHidden,
         });
 
@@ -258,8 +260,93 @@ export const useLibraryPhotoActions = ({
     [filteredPhotos, patchPhotoCollections, photos, sourcePhotos]
   );
 
+  const handleUpdateSelectedPhotos = useCallback(
+    async ({ isFavorite, isHidden }) => {
+      if (selectedPhotoIds.length === 0) return;
+
+      const snapshot = selectedPhotos.map((photo) => ({ ...photo }));
+      const selectedSet = new Set(selectedPhotoIds);
+      const optimisticTimestamp = new Date().toISOString();
+
+      setPhotos((prev) =>
+        prev.map((photo) => {
+          if (!selectedSet.has(photo.id)) return photo;
+          return {
+            ...photo,
+            is_favorite: typeof isFavorite === 'boolean' ? isFavorite : photo.is_favorite,
+            is_hidden: typeof isHidden === 'boolean' ? isHidden : photo.is_hidden,
+            updated_at: optimisticTimestamp,
+          };
+        })
+      );
+
+      if (filteredPhotos) {
+        setFilteredPhotos((prev) =>
+          prev.map((photo) => {
+            if (!selectedSet.has(photo.id)) return photo;
+            return {
+              ...photo,
+              is_favorite: typeof isFavorite === 'boolean' ? isFavorite : photo.is_favorite,
+              is_hidden: typeof isHidden === 'boolean' ? isHidden : photo.is_hidden,
+              updated_at: optimisticTimestamp,
+            };
+          })
+        );
+      }
+
+      const results = await Promise.allSettled(
+        selectedPhotos.map((photo) =>
+          updatePhotoPreferences({
+            photoId: photo.id,
+            isFavorite: typeof isFavorite === 'boolean' ? isFavorite : photo.is_favorite,
+            isHidden: typeof isHidden === 'boolean' ? isHidden : photo.is_hidden,
+          })
+        )
+      );
+
+      const successful = [];
+      const failedIds = [];
+
+      results.forEach((result, index) => {
+        const photoId = selectedPhotos[index]?.id;
+        if (!photoId) return;
+
+        if (result.status === 'fulfilled') {
+          successful.push(result.value);
+        } else {
+          failedIds.push(photoId);
+        }
+      });
+
+      if (successful.length > 0) {
+        const updatedById = new Map(successful.map((photo) => [photo.id, photo]));
+        setPhotos((prev) => prev.map((photo) => updatedById.get(photo.id) || photo));
+        if (filteredPhotos) {
+          setFilteredPhotos((prev) => prev.map((photo) => updatedById.get(photo.id) || photo));
+        }
+        await addPhotoToCache(successful);
+      }
+
+      if (failedIds.length > 0) {
+        const snapshotById = new Map(snapshot.map((photo) => [photo.id, photo]));
+        const failedSet = new Set(failedIds);
+        setPhotos((prev) =>
+          prev.map((photo) => (failedSet.has(photo.id) ? snapshotById.get(photo.id) || photo : photo))
+        );
+        if (filteredPhotos) {
+          setFilteredPhotos((prev) =>
+            prev.map((photo) => (failedSet.has(photo.id) ? snapshotById.get(photo.id) || photo : photo))
+          );
+        }
+        throw new Error(`Failed to update ${failedIds.length} selected photo(s)`);
+      }
+    },
+    [filteredPhotos, selectedPhotoIds, selectedPhotos, setFilteredPhotos, setPhotos]
+  );
+
   return {
     sourcePhotos,
+    selectedPhotos,
     viewerPhotos,
     selectedIndex,
     setSelectedIndex,
@@ -277,5 +364,6 @@ export const useLibraryPhotoActions = ({
     handleDeleteSelectedPhotos,
     handleSaveDescriptions,
     handleUpdatePhotoPreferences,
+    handleUpdateSelectedPhotos,
   };
 };

@@ -7,7 +7,6 @@ export type PhotoRecord = {
   category?: string | null;
   tags?: string | null;
   is_favorite?: boolean;
-  is_archived?: boolean;
   is_hidden?: boolean;
   created_at?: string | null;
   updated_at?: string | null;

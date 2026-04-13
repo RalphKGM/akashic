@@ -75,7 +75,6 @@ export default function PhotoViewer({
     ? {
         ...photoData,
         is_favorite: localPreferences.is_favorite,
-        is_archived: localPreferences.is_archived,
         is_hidden: localPreferences.is_hidden,
       }
     : photoData;
@@ -85,7 +84,6 @@ export default function PhotoViewer({
   const currentLiteral = photoData?.literal ?? '';
   const currentDescriptive = photoData?.descriptive ?? '';
   const isFavorite = Boolean(effectivePhotoData?.is_favorite);
-  const isArchived = Boolean(effectivePhotoData?.is_archived);
   const isHidden = Boolean(effectivePhotoData?.is_hidden);
   const hasDescriptionChange =
     literalDraft.trim() !== currentLiteral.trim() ||
@@ -125,10 +123,9 @@ export default function PhotoViewer({
     setLocalPreferences({
       photoId: photoData.id,
       is_favorite: Boolean(photoData.is_favorite),
-      is_archived: Boolean(photoData.is_archived),
       is_hidden: Boolean(photoData.is_hidden),
     });
-  }, [photoData?.id, photoData?.is_archived, photoData?.is_favorite, photoData?.is_hidden]);
+  }, [photoData?.id, photoData?.is_favorite, photoData?.is_hidden]);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -322,20 +319,17 @@ export default function PhotoViewer({
       setLocalPreferences((prev) => ({
         photoId: photoData.id,
         is_favorite: patch.is_favorite ?? prev?.is_favorite ?? Boolean(photoData.is_favorite),
-        is_archived: patch.is_archived ?? prev?.is_archived ?? Boolean(photoData.is_archived),
         is_hidden: patch.is_hidden ?? prev?.is_hidden ?? Boolean(photoData.is_hidden),
       }));
       await onUpdatePreferences({
         photoId: photoData.id,
         isFavorite: patch.is_favorite ?? photoData.is_favorite,
-        isArchived: patch.is_archived ?? photoData.is_archived,
         isHidden: patch.is_hidden ?? photoData.is_hidden,
       });
     } catch (error) {
       setLocalPreferences({
         photoId: photoData.id,
         is_favorite: Boolean(photoData.is_favorite),
-        is_archived: Boolean(photoData.is_archived),
         is_hidden: Boolean(photoData.is_hidden),
       });
       Alert.alert('Update failed', error.message || 'Failed to update photo');

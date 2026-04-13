@@ -52,8 +52,10 @@ export default function PhotoViewer({
   const { isDarkMode } = useThemeContext();
   const colors = getThemeColors(isDarkMode);
   const pagerRef = useRef(null);
+  const wasVisibleRef = useRef(false);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [resolvedUris, setResolvedUris] = useState({});
+  const [localPreferences, setLocalPreferences] = useState(null);
 
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -69,14 +71,22 @@ export default function PhotoViewer({
 
   const currentPhoto = photos?.[currentIndex];
   const photoData = currentPhoto?.item ?? currentPhoto;
+  const effectivePhotoData = localPreferences
+    ? {
+        ...photoData,
+        is_favorite: localPreferences.is_favorite,
+        is_archived: localPreferences.is_archived,
+        is_hidden: localPreferences.is_hidden,
+      }
+    : photoData;
   const tags = photoData?.tags
     ? photoData.tags.split(',').map(t => t.trim()).filter(Boolean)
     : [];
   const currentLiteral = photoData?.literal ?? '';
   const currentDescriptive = photoData?.descriptive ?? '';
-  const isFavorite = Boolean(photoData?.is_favorite);
-  const isArchived = Boolean(photoData?.is_archived);
-  const isHidden = Boolean(photoData?.is_hidden);
+  const isFavorite = Boolean(effectivePhotoData?.is_favorite);
+  const isArchived = Boolean(effectivePhotoData?.is_archived);
+  const isHidden = Boolean(effectivePhotoData?.is_hidden);
   const hasDescriptionChange =
     literalDraft.trim() !== currentLiteral.trim() ||
     descriptiveDraft.trim() !== currentDescriptive.trim();
@@ -105,6 +115,20 @@ export default function PhotoViewer({
     setDescriptiveDraft(currentDescriptive);
     setIsEditingDescriptions(false);
   }, [currentPhoto?.id, currentLiteral, currentDescriptive]);
+
+  useEffect(() => {
+    if (!photoData?.id) {
+      setLocalPreferences(null);
+      return;
+    }
+
+    setLocalPreferences({
+      photoId: photoData.id,
+      is_favorite: Boolean(photoData.is_favorite),
+      is_archived: Boolean(photoData.is_archived),
+      is_hidden: Boolean(photoData.is_hidden),
+    });
+  }, [photoData?.id, photoData?.is_archived, photoData?.is_favorite, photoData?.is_hidden]);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -167,7 +191,10 @@ export default function PhotoViewer({
   };
 
   useEffect(() => {
-    if (visible) {
+    const isOpening = visible && !wasVisibleRef.current;
+    wasVisibleRef.current = visible;
+
+    if (isOpening) {
       setCurrentIndex(initialIndex);
       setResolvedUris(seedResolvedUris);
       setTimeout(() => {
@@ -187,7 +214,7 @@ export default function PhotoViewer({
           useNativeDriver: true,
         }),
       ]).start();
-    } else {
+    } else if (!visible) {
       scaleAnim.setValue(0.9);
       opacityAnim.setValue(0);
       sheetAnim.setValue(SCREEN_HEIGHT);
@@ -195,8 +222,21 @@ export default function PhotoViewer({
       keyboardAnim.setValue(0);
       setSheetVisible(false);
       setResolvedUris({});
+      setLocalPreferences(null);
     }
-  }, [visible, initialIndex, seedResolvedUris]);
+  }, [visible, initialIndex, scaleAnim, opacityAnim, sheetAnim, backdropAnim, keyboardAnim, seedResolvedUris]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    setResolvedUris((prev) => ({ ...seedResolvedUris, ...prev }));
+  }, [seedResolvedUris, visible]);
+
+  useEffect(() => {
+    if (!photos?.length) return;
+    if (currentIndex < photos.length) return;
+    setCurrentIndex(Math.max(0, photos.length - 1));
+  }, [currentIndex, photos?.length]);
 
   useEffect(() => {
     if (!visible || !photos?.length) return;
@@ -279,6 +319,12 @@ export default function PhotoViewer({
 
     try {
       setUpdatingPreferenceKey(key);
+      setLocalPreferences((prev) => ({
+        photoId: photoData.id,
+        is_favorite: patch.is_favorite ?? prev?.is_favorite ?? Boolean(photoData.is_favorite),
+        is_archived: patch.is_archived ?? prev?.is_archived ?? Boolean(photoData.is_archived),
+        is_hidden: patch.is_hidden ?? prev?.is_hidden ?? Boolean(photoData.is_hidden),
+      }));
       await onUpdatePreferences({
         photoId: photoData.id,
         isFavorite: patch.is_favorite ?? photoData.is_favorite,
@@ -286,6 +332,12 @@ export default function PhotoViewer({
         isHidden: patch.is_hidden ?? photoData.is_hidden,
       });
     } catch (error) {
+      setLocalPreferences({
+        photoId: photoData.id,
+        is_favorite: Boolean(photoData.is_favorite),
+        is_archived: Boolean(photoData.is_archived),
+        is_hidden: Boolean(photoData.is_hidden),
+      });
       Alert.alert('Update failed', error.message || 'Failed to update photo');
     } finally {
       setUpdatingPreferenceKey(null);

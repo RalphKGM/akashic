@@ -89,7 +89,7 @@ export default function Library() {
     mediaTypes: 'photo',
   });
   const { photos, setPhotos, uploadProgress } = usePhotoContext();
-  const { isDarkMode } = useThemeContext();
+  const { themeId, isDarkMode } = useThemeContext();
   const router = useRouter();
   const flatListRef = useRef(null);
   const [activeFilter, setActiveFilter] = useState('library');
@@ -383,7 +383,7 @@ export default function Library() {
     ? Math.round((uploadProgress.current / uploadProgress.total) * 100)
     : 0;
 
-  const colors = getThemeColors(isDarkMode);
+  const colors = getThemeColors(themeId);
   const activeFilterOption = FILTER_OPTIONS.find((option) => option.value === activeFilter) ?? FILTER_OPTIONS[0];
   const activeDateOption =
     DATE_FILTER_OPTIONS.find((option) => option.value === activeDateFilter) ?? DATE_FILTER_OPTIONS[0];

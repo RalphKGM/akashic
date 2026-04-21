@@ -31,8 +31,8 @@ export default function AlbumDetail({
   onOpenMenu,
 }) {
   const insets = useSafeAreaInsets();
-  const { isDarkMode } = useThemeContext();
-  const colors = getThemeColors(isDarkMode);
+  const { themeId, isDarkMode } = useThemeContext();
+  const colors = getThemeColors(themeId);
   const isCategoryAlbum = Boolean(album?.isCategory);
   const orderedPhotos = useMemo(() => {
     if (!Array.isArray(album?.photo_ids) || album.photo_ids.length === 0) {
@@ -285,4 +285,3 @@ export default function AlbumDetail({
     </View>
   );
 }
-

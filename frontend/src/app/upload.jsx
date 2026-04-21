@@ -65,7 +65,7 @@ const prepareLibraryAsset = async (asset) => {
 export default function Upload() {
   const router = useRouter();
   const { appendPhoto, photos, uploadProgress, setUploadProgress } = usePhotoContext();
-  const { isDarkMode } = useThemeContext();
+  const { themeId, isDarkMode } = useThemeContext();
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [recentSuggestions, setRecentSuggestions] = useState([]);
@@ -343,7 +343,7 @@ export default function Upload() {
     ? Math.round((uploadProgress.current / uploadProgress.total) * 100)
     : 0;
 
-  const colors = getThemeColors(isDarkMode);
+  const colors = getThemeColors(themeId);
 
   return (
     <View className={`flex-1 ${colors.pageBg}`}>

@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeContext } from '../context/ThemeContext.jsx';
 import { useResolvedPhotoUri } from '../hooks/useResolvedPhotoUri.js';
+import { getThemeColors } from '../theme/appColors.js';
 
 const { width: windowWidth } = Dimensions.get('window');
 
@@ -16,7 +17,8 @@ function PhotoItem({
   selectionMode = false,
   onResolvedUri,
 }) {
-  const { isDarkMode } = useThemeContext();
+  const { themeId } = useThemeContext();
+  const colors = getThemeColors(themeId);
   const itemRef = useRef(null);
   const size = (windowWidth - 4) / numColumns - 4;
   const resolvedUri = useResolvedPhotoUri(item);
@@ -49,7 +51,7 @@ function PhotoItem({
       <View
         ref={itemRef}
         collapsable={false}
-        className={`m-0.5 overflow-hidden ${isDarkMode ? 'bg-zinc-700' : 'bg-gray-200'}`}
+        className={`m-0.5 overflow-hidden ${colors.placeholderBg}`}
         style={{ width: size, height: size }}
       >
         {resolvedUri ? (
@@ -61,8 +63,8 @@ function PhotoItem({
             transition={150}
           />
         ) : (
-          <View className={`flex-1 items-center justify-center ${isDarkMode ? 'bg-zinc-800' : 'bg-gray-100'}`}>
-            <Ionicons name="image-outline" size={18} color={isDarkMode ? '#A1A1AA' : '#9CA3AF'} />
+          <View className={`flex-1 items-center justify-center ${colors.placeholderBg}`}>
+            <Ionicons name="image-outline" size={18} color={colors.emptyIcon} />
           </View>
         )}
 
@@ -81,9 +83,9 @@ function PhotoItem({
         {selectionMode && (
           <View className="absolute top-1.5 right-1.5">
             <View
-              className={`w-5 h-5 rounded-full items-center justify-center ${isSelected ? 'bg-blue-500' : 'bg-black/35'}`}
+              className={`w-5 h-5 rounded-full items-center justify-center ${isSelected ? colors.fabBg : 'bg-black/35'}`}
             >
-              {isSelected && <Ionicons name="checkmark" size={12} color="white" />}
+              {isSelected && <Ionicons name="checkmark" size={12} color={colors.fabIcon} />}
             </View>
           </View>
         )}

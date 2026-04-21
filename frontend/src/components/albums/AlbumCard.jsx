@@ -7,9 +7,9 @@ import { useResolvedPhotoUri } from '../../hooks/useResolvedPhotoUri.js';
 
 export const ALBUM_CARD_SIZE = 180;
 
-export default function AlbumCard({ album, onPress, isDarkMode = false, size = ALBUM_CARD_SIZE }) {
+export default function AlbumCard({ album, onPress, isDarkMode = false, themeId, size = ALBUM_CARD_SIZE }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const colors = getThemeColors(isDarkMode);
+  const colors = getThemeColors(themeId ?? isDarkMode);
   const coverPhoto =
     album.photos?.find((photo) => photo.id === album.cover_photo_id) ||
     album.coverPhoto ||

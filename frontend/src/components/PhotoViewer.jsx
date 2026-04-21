@@ -49,8 +49,8 @@ export default function PhotoViewer({
   onUpdatePreferences,
   isDeleting = false
 }) {
-  const { isDarkMode } = useThemeContext();
-  const colors = getThemeColors(isDarkMode);
+  const { themeId, isDarkMode } = useThemeContext();
+  const colors = getThemeColors(themeId);
   const pagerRef = useRef(null);
   const wasVisibleRef = useRef(false);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);

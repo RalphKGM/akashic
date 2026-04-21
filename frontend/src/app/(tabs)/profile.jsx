@@ -20,9 +20,9 @@ const CACHE_KEY = 'photos_cache';
 export default function Profile() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const { isDarkMode, setIsDarkMode } = useThemeContext();
+  const { themeId, setThemeId, isDarkMode } = useThemeContext();
   const { resetPhotos } = usePhotoContext();
-  const colors = getThemeColors(isDarkMode);
+  const colors = getThemeColors(themeId);
   const [uploadSettings, setUploadSettings] = useState(DEFAULT_UPLOAD_SETTINGS);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
@@ -194,9 +194,10 @@ export default function Profile() {
         {/* Appearance */}
         <SettingsSection title="Appearance">
           <ThemeSwitch
-            isDarkMode={isDarkMode}
-            onChange={setIsDarkMode}
+            themeId={themeId}
+            onChangeTheme={setThemeId}
             colors={colors}
+            isDarkMode={isDarkMode}
           />
         </SettingsSection>
 

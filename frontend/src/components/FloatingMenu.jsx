@@ -4,18 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { takePhoto } from '../service/photoService.js';
 import { useRouter } from 'expo-router';
 import { usePhotoContext } from '../context/PhotoContext';
-import { useThemeContext } from '../context/ThemeContext.jsx';
 import { getThemeColors } from '../theme/appColors.js';
 
-export default function FloatingMenu({ menuAnim, isDarkMode, size = 0 }) {
+export default function FloatingMenu({ menuAnim, themeId, isDarkMode, size = 0 }) {
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
   const { appendPhoto, setUploadProgress } = usePhotoContext();
-  const colors = getThemeColors(isDarkMode);
-
-  const circleBg      = isDarkMode ? '#1C1C1E' : '#FFFFFF';
-  const circleBorder  = isDarkMode ? '#3A3A3C' : '#D1D1D6';
-  const iconColor     = isDarkMode ? '#FFFFFF'  : '#000000';
+  const colors = getThemeColors(themeId ?? isDarkMode);
   const shadowOpacity = isDarkMode ? 0.6 : 0.15;
 
   const startUploadBanner = () => {
@@ -143,13 +138,12 @@ export default function FloatingMenu({ menuAnim, isDarkMode, size = 0 }) {
 
       <Pressable
         onPress={toggleMenu}
+        className={`border ${colors.fabBg} ${colors.menuBorder}`}
         style={{
           width: circleSize,
           height: circleSize,
           borderRadius: circleSize / 2,
-          backgroundColor: circleBg,
           borderWidth: 1,
-          borderColor: circleBorder,
           alignItems: 'center',
           justifyContent: 'center',
           shadowColor: '#000',
@@ -160,7 +154,7 @@ export default function FloatingMenu({ menuAnim, isDarkMode, size = 0 }) {
         }}
       >
         <Animated.View style={{ transform: [{ rotate: iconRotation }] }}>
-          <Ionicons name="add" size={32} color={iconColor} />
+          <Ionicons name="add" size={32} color={colors.fabIcon} />
         </Animated.View>
       </Pressable>
     </View>

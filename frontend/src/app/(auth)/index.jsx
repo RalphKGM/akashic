@@ -7,14 +7,14 @@ import { useThemeContext } from '../../context/ThemeContext.jsx';
 import { getThemeColors } from '../../theme/appColors.js';
 
 export default function Login() {
-  const { isDarkMode } = useThemeContext();
+  const { themeId, isDarkMode } = useThemeContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const dark = isDarkMode;
-  const colors = getThemeColors(isDarkMode);
+  const colors = getThemeColors(themeId);
 
   const validate = () => {
     if (!email.trim()) {

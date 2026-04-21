@@ -10,14 +10,14 @@ const OTP_LENGTH = 6;
 
 export default function OtpScreen() {
   const { email } = useLocalSearchParams();
-  const { isDarkMode } = useThemeContext();
+  const { themeId, isDarkMode } = useThemeContext();
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const inputs = useRef([]);
 
   const dark = isDarkMode;
-  const colors = getThemeColors(isDarkMode);
+  const colors = getThemeColors(themeId);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -81,28 +81,28 @@ export default function OtpScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className={`flex-1 justify-center items-center px-5 ${dark ? 'bg-zinc-900' : 'bg-gray-100'}`}
+      className={`flex-1 justify-center items-center px-5 ${colors.pageBg}`}
     >
-      <View className={`w-full rounded-3xl border p-8 ${dark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-gray-200'}`}>
+      <View className={`w-full rounded-3xl border p-8 ${colors.cardBg} ${colors.border}`}>
 
         {/* Back button */}
         <Pressable onPress={() => router.back()} className="mb-6 self-start">
-          <Ionicons name="arrow-back" size={24} color={dark ? '#fff' : '#18181b'} />
+          <Ionicons name="arrow-back" size={24} color={colors.iconColor} />
         </Pressable>
 
         {/* Icon */}
-        <View className={`w-14 h-14 rounded-2xl items-center justify-center mb-6 ${dark ? 'bg-zinc-700' : 'bg-gray-100'}`}>
-          <Ionicons name="mail-unread-outline" size={28} color={dark ? '#a1a1aa' : '#6b7280'} />
+        <View className={`w-14 h-14 rounded-2xl items-center justify-center mb-6 ${colors.iconBg}`}>
+          <Ionicons name="mail-unread-outline" size={28} color={colors.iconColor} />
         </View>
 
         {/* Header */}
-        <Text className={`text-3xl font-bold mb-2 ${dark ? 'text-white' : 'text-zinc-900'}`}>
+        <Text className={`text-3xl font-bold mb-2 ${colors.title}`}>
           Check your email
         </Text>
-        <Text className={`text-base mb-2 ${dark ? 'text-zinc-400' : 'text-gray-500'}`}>
+        <Text className={`text-base mb-2 ${colors.textSecondary}`}>
           We sent a 6-digit code to
         </Text>
-        <Text className={`text-base font-semibold mb-10 ${dark ? 'text-white' : 'text-zinc-900'}`}>
+        <Text className={`text-base font-semibold mb-10 ${colors.textPrimary}`}>
           {email}
         </Text>
 
@@ -131,10 +131,10 @@ export default function OtpScreen() {
         <Pressable
           onPress={handleVerify}
           disabled={loading}
-          className={`h-14 rounded-full items-center justify-center mb-8 ${dark ? 'bg-zinc-100' : 'bg-black'}`}
+          className={`h-14 rounded-full items-center justify-center mb-8 ${colors.button}`}
         >
           {({ pressed }) => (
-            <Text className={`text-lg font-semibold ${dark ? 'text-zinc-900' : 'text-white'}`} style={{ opacity: pressed ? 0.7 : 1 }}>
+            <Text className={`text-lg font-semibold ${colors.buttonText}`} style={{ opacity: pressed ? 0.7 : 1 }}>
               {loading ? 'Verifying...' : 'Verify Email'}
             </Text>
           )}
@@ -142,14 +142,14 @@ export default function OtpScreen() {
 
         {/* Resend */}
         <View className="flex-row justify-center items-center">
-          <Text className={`text-sm ${dark ? 'text-zinc-400' : 'text-gray-500'}`}>
+          <Text className={`text-sm ${colors.textSecondary}`}>
             Didn't receive it?{' '}
           </Text>
           <Pressable onPress={handleResend} disabled={cooldown > 0}>
             <Text className={`text-sm font-semibold ${
               cooldown > 0
                 ? dark ? 'text-zinc-600' : 'text-gray-300'
-                : dark ? 'text-white' : 'text-zinc-900'
+                : colors.textPrimary
             }`}>
               {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
             </Text>

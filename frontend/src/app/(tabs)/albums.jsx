@@ -20,8 +20,8 @@ const CATEGORY_ORDER = ['food', 'nature', 'animals', 'people', 'travel'];
 
 export default function Albums() {
   const { photos, setPhotos } = usePhotoContext();
-  const { isDarkMode } = useThemeContext();
-  const colors = getThemeColors(isDarkMode);
+  const { themeId, isDarkMode } = useThemeContext();
+  const colors = getThemeColors(themeId);
   const albumCardGap = 12;
   const activePhotos = useMemo(
     () => photos.filter((photo) => !photo?.is_hidden),
@@ -108,7 +108,7 @@ export default function Albums() {
         >
           {page.slice(0, 2).map((album) => (
             <View key={album.id} style={{ width: albumCardSize }}>
-              <AlbumCard album={album} onPress={handleOpenAlbum} isDarkMode={isDarkMode} size={albumCardSize} />
+              <AlbumCard album={album} onPress={handleOpenAlbum} isDarkMode={isDarkMode} themeId={themeId} size={albumCardSize} />
             </View>
           ))}
           {page.length === 1 && <View style={{ width: albumCardSize }} />}
@@ -117,7 +117,7 @@ export default function Albums() {
           <View className="flex-row justify-between" style={{ columnGap: albumCardGap }}>
             {page.slice(2, 4).map((album) => (
               <View key={album.id} style={{ width: albumCardSize }}>
-                <AlbumCard album={album} onPress={handleOpenAlbum} isDarkMode={isDarkMode} size={albumCardSize} />
+                <AlbumCard album={album} onPress={handleOpenAlbum} isDarkMode={isDarkMode} themeId={themeId} size={albumCardSize} />
               </View>
             ))}
             {page.length === 3 && <View style={{ width: albumCardSize }} />}
@@ -125,7 +125,7 @@ export default function Albums() {
         )}
       </View>
     ),
-    [albumCardGap, albumCardSize, handleOpenAlbum, isDarkMode]
+    [albumCardGap, albumCardSize, handleOpenAlbum, isDarkMode, themeId]
   );
 
   const renderCreatePhotoItem = useCallback(
@@ -225,6 +225,7 @@ export default function Albums() {
                           album={album}
                           onPress={handleOpenAlbum}
                           isDarkMode={isDarkMode}
+                          themeId={themeId}
                           size={albumCardSize}
                         />
                       </View>

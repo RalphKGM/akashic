@@ -20,8 +20,8 @@ import { useThemeContext } from '../context/ThemeContext.jsx';
 
 export default function FaceRegistration() {
   const router = useRouter();
-  const { isDarkMode } = useThemeContext();
-  const colors = getThemeColors(isDarkMode);
+  const { themeId, isDarkMode } = useThemeContext();
+  const colors = getThemeColors(themeId);
 
   const [faces, setFaces] = useState([]);
   const [loading, setLoading] = useState(true);

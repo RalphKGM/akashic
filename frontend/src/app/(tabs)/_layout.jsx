@@ -6,11 +6,13 @@ import { View, Text, TouchableOpacity, Animated } from 'react-native';
 import { useRef, useState } from 'react';
 import { useThemeContext } from '../../context/ThemeContext.jsx';
 import FloatingMenu from '../../components/FloatingMenu.jsx';
+import { getThemeColors } from '../../theme/appColors.js';
 
-function FloatingTabBar({ state, descriptors, navigation, isDarkMode }) {
+function FloatingTabBar({ state, descriptors, navigation, themeId, isDarkMode }) {
   const insets = useSafeAreaInsets();
   const menuAnim = useRef(new Animated.Value(0)).current;
   const [pillHeight, setPillHeight] = useState(0);
+  const colors = getThemeColors(themeId);
 
   const icons = {
     library: { focused: 'images',  outline: 'images-outline'  },
@@ -18,11 +20,11 @@ function FloatingTabBar({ state, descriptors, navigation, isDarkMode }) {
     profile: { focused: 'person',  outline: 'person-outline'  },
   };
 
-  const pillBg      = isDarkMode ? 'bg-[#1C1C1E]' : 'bg-white';
-  const pillBorder  = isDarkMode ? 'border-[#3A3A3C]' : 'border-[#D1D1D6]';
-  const activeTabBg = isDarkMode ? 'bg-[#2C2C2E]' : 'bg-zinc-200';
-  const inactiveColor = isDarkMode ? '#A1A1AA' : '#71717A';
-  const activeColor   = isDarkMode ? '#FFFFFF'  : '#000000';
+  const pillBg = colors.menuBg;
+  const pillBorder = colors.menuBorder;
+  const activeTabBg = colors.iconBg;
+  const inactiveColor = colors.chevron;
+  const activeColor = colors.iconColor;
 
   return (
     <View
@@ -89,6 +91,7 @@ function FloatingTabBar({ state, descriptors, navigation, isDarkMode }) {
       {/* FAB circle */}
       <FloatingMenu
         menuAnim={menuAnim}
+        themeId={themeId}
         isDarkMode={isDarkMode}
         size={pillHeight}
       />
@@ -97,13 +100,13 @@ function FloatingTabBar({ state, descriptors, navigation, isDarkMode }) {
 }
 
 export default function TabsLayout() {
-  const { isDarkMode } = useThemeContext();
+  const { themeId, isDarkMode } = useThemeContext();
 
   return (
     <>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <Tabs
-        tabBar={(props) => <FloatingTabBar {...props} isDarkMode={isDarkMode} />}
+        tabBar={(props) => <FloatingTabBar {...props} themeId={themeId} isDarkMode={isDarkMode} />}
         screenOptions={{ headerShown: false }}
       >
         <Tabs.Screen name="library" options={{ tabBarLabel: 'Library' }} />

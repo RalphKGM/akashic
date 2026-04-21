@@ -7,6 +7,7 @@ import { supabase } from '../../config/supabase';
 import { useThemeContext } from '../../context/ThemeContext.jsx';
 import { usePhotoContext } from '../../context/PhotoContext';
 import { getThemeColors } from '../../theme/appColors.js';
+import ThemeSwitch from '../../components/ThemeSwitch.jsx';
 import {
   DEFAULT_UPLOAD_SETTINGS,
   getUploadSettings,
@@ -192,12 +193,10 @@ export default function Profile() {
 
         {/* Appearance */}
         <SettingsSection title="Appearance">
-          <ToggleRow
-            icon="moon"
-            label="Dark Mode"
-            value={isDarkMode}
-            onValueChange={setIsDarkMode}
-            isLast
+          <ThemeSwitch
+            isDarkMode={isDarkMode}
+            onChange={setIsDarkMode}
+            colors={colors}
           />
         </SettingsSection>
 
